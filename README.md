@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 2.0.0
-    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill com Seleção de Alvo
+    Versão: 2.1.0
+    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill Automático + FRZZ
 ]]
 
 -- Serviços
@@ -26,7 +26,9 @@ local CONFIG = {
     LOOP_TP_INTERVAL = 0.1,
     SPAWNPOINT = nil,
     AUTO_FARM_ENABLED = false,
-    AUTO_FARM_INTERVAL = 15,
+    SHIELD_WAIT = 5, -- Espera 5 segundos após renascer (escudo)
+    FRZZ_ENABLED = false,
+    frozenCFrame = nil,
 }
 
 -- ==================== NOTIFICAÇÕES ====================
@@ -284,50 +286,47 @@ local function createMainUI()
     afTitle.TextXAlignment = Enum.TextXAlignment.Center
     afTitle.Parent = autoFarmPage
     
-    -- Label "Cooldown (s):"
-    local cdLabel = Instance.new("TextLabel")
-    cdLabel.Size = UDim2.new(0.4, 0, 0, 16)
-    cdLabel.Position = UDim2.new(0.05, 0, 0, 32)
-    cdLabel.BackgroundTransparency = 1
-    cdLabel.Text = "Cooldown (s):"
-    cdLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    cdLabel.Font = Enum.Font.GothamMedium
-    cdLabel.TextSize = 10
-    cdLabel.TextXAlignment = Enum.TextXAlignment.Left
-    cdLabel.Parent = autoFarmPage
+    local afDesc = Instance.new("TextLabel")
+    afDesc.Size = UDim2.new(1, -20, 0, 25)
+    afDesc.Position = UDim2.new(0, 10, 0, 28)
+    afDesc.BackgroundTransparency = 1
+    afDesc.Text = "Mata → espera renascer → espera 5s (escudo) → mata"
+    afDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
+    afDesc.Font = Enum.Font.GothamMedium
+    afDesc.TextSize = 9
+    afDesc.TextWrapped = true
+    afDesc.TextXAlignment = Enum.TextXAlignment.Center
+    afDesc.Parent = autoFarmPage
     
-    -- Caixa de texto: cooldown
-    local cooldownBox = Instance.new("TextBox")
-    cooldownBox.Size = UDim2.new(0.25, 0, 0, 22)
-    cooldownBox.Position = UDim2.new(0.35, 0, 0, 30)
-    cooldownBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    cooldownBox.Text = tostring(CONFIG.AUTO_FARM_INTERVAL)
-    cooldownBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    cooldownBox.Font = Enum.Font.GothamBold
-    cooldownBox.TextSize = 13
-    cooldownBox.BorderSizePixel = 0
-    cooldownBox.PlaceholderText = "S"
-    cooldownBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
-    cooldownBox.Parent = autoFarmPage
-    Instance.new("UICorner", cooldownBox).CornerRadius = UDim.new(0, 6)
-    
-    -- Botão ON/OFF
+    -- Botões INICIAR + FRZZ
     local afToggle = Instance.new("TextButton")
-    afToggle.Size = UDim2.new(0.35, 0, 0, 28)
-    afToggle.Position = UDim2.new(0.65, 0, 0, 28)
+    afToggle.Size = UDim2.new(0.4, 0, 0, 28)
+    afToggle.Position = UDim2.new(0.08, 0, 0, 58)
     afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    afToggle.Text = "INICIAR"
+    afToggle.Text = "INICIAR FARM"
     afToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     afToggle.Font = Enum.Font.GothamBold
-    afToggle.TextSize = 11
+    afToggle.TextSize = 10
     afToggle.BorderSizePixel = 0
     afToggle.Parent = autoFarmPage
     Instance.new("UICorner", afToggle).CornerRadius = UDim.new(0, 6)
     
+    local frzzToggle = Instance.new("TextButton")
+    frzzToggle.Size = UDim2.new(0.4, 0, 0, 28)
+    frzzToggle.Position = UDim2.new(0.52, 0, 0, 58)
+    frzzToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    frzzToggle.Text = "FRZZ: OFF"
+    frzzToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    frzzToggle.Font = Enum.Font.GothamBold
+    frzzToggle.TextSize = 10
+    frzzToggle.BorderSizePixel = 0
+    frzzToggle.Parent = autoFarmPage
+    Instance.new("UICorner", frzzToggle).CornerRadius = UDim.new(0, 6)
+    
     -- Status
     local afStatus = Instance.new("TextLabel")
     afStatus.Size = UDim2.new(1, -20, 0, 16)
-    afStatus.Position = UDim2.new(0, 10, 0, 58)
+    afStatus.Position = UDim2.new(0, 10, 0, 92)
     afStatus.BackgroundTransparency = 1
     afStatus.Text = "Status: Parado"
     afStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -336,10 +335,9 @@ local function createMainUI()
     afStatus.TextXAlignment = Enum.TextXAlignment.Center
     afStatus.Parent = autoFarmPage
     
-    -- Alvo atual
     local afTargetLabel = Instance.new("TextLabel")
     afTargetLabel.Size = UDim2.new(1, -20, 0, 16)
-    afTargetLabel.Position = UDim2.new(0, 10, 0, 76)
+    afTargetLabel.Position = UDim2.new(0, 10, 0, 110)
     afTargetLabel.BackgroundTransparency = 1
     afTargetLabel.Text = "Alvo: Nenhum"
     afTargetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -351,7 +349,7 @@ local function createMainUI()
     -- Label "Selecione o alvo:"
     local selectLabel = Instance.new("TextLabel")
     selectLabel.Size = UDim2.new(1, -20, 0, 16)
-    selectLabel.Position = UDim2.new(0, 10, 0, 96)
+    selectLabel.Position = UDim2.new(0, 10, 0, 128)
     selectLabel.BackgroundTransparency = 1
     selectLabel.Text = "🎯 Selecione o alvo:"
     selectLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -362,8 +360,8 @@ local function createMainUI()
     
     -- Lista de alvos
     local targetList = Instance.new("ScrollingFrame")
-    targetList.Size = UDim2.new(1, -20, 0.55, 0)
-    targetList.Position = UDim2.new(0, 10, 0, 115)
+    targetList.Size = UDim2.new(1, -20, 0.5, 0)
+    targetList.Position = UDim2.new(0, 10, 0, 146)
     targetList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     targetList.BorderSizePixel = 0
     targetList.ScrollBarThickness = 3
@@ -614,6 +612,7 @@ local function createMainUI()
         CONFIG.FAST_PUNCH_ENABLED = false
         CONFIG.LOOP_TP_ENABLED = false
         CONFIG.AUTO_FARM_ENABLED = false
+        CONFIG.FRZZ_ENABLED = false
         TweenService:Create(mainFrame, 
             TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
             {Size = UDim2.new(0, 0, 0, 0)}
@@ -642,8 +641,8 @@ local function createMainUI()
         afToggle = afToggle,
         afStatus = afStatus,
         afTargetLabel = afTargetLabel,
-        cooldownBox = cooldownBox,
         targetList = targetList,
+        frzzToggle = frzzToggle,
     }
 end
 
@@ -838,7 +837,7 @@ local function setupTeleportSystem(ui)
     updatePlayerList()
 end
 
--- ==================== AUTO FARM KILL (COM SELEÇÃO DE ALVO) ====================
+-- ==================== AUTO FARM KILL (AUTOMÁTICO) + FRZZ ====================
 local function setupAutoFarm(ui)
     local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
     if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
@@ -860,17 +859,7 @@ local function setupAutoFarm(ui)
         return humanoid.Health > 0
     end
     
-    -- CooldownBox atualiza ao perder foco
-    ui.cooldownBox.FocusLost:Connect(function()
-        local num = tonumber(ui.cooldownBox.Text)
-        if num and num >= 1 then
-            CONFIG.AUTO_FARM_INTERVAL = num
-        else
-            ui.cooldownBox.Text = tostring(CONFIG.AUTO_FARM_INTERVAL)
-        end
-    end)
-    
-    -- Botão ON/OFF
+    -- Botão INICIAR/PARAR
     ui.afToggle.MouseButton1Click:Connect(function()
         CONFIG.AUTO_FARM_ENABLED = not CONFIG.AUTO_FARM_ENABLED
         
@@ -881,11 +870,7 @@ local function setupAutoFarm(ui)
                 return
             end
             
-            local cd = tonumber(ui.cooldownBox.Text)
-            if cd and cd >= 1 then CONFIG.AUTO_FARM_INTERVAL = cd end
-            ui.cooldownBox.Text = tostring(CONFIG.AUTO_FARM_INTERVAL)
-            
-            ui.afToggle.Text = "PARAR"
+            ui.afToggle.Text = "PARAR FARM"
             ui.afToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
             ui.afStatus.Text = "Status: Iniciando..."
             ui.afStatus.TextColor3 = Color3.fromRGB(46, 204, 113)
@@ -894,24 +879,7 @@ local function setupAutoFarm(ui)
             task.spawn(function()
                 while CONFIG.AUTO_FARM_ENABLED do
                     -- Verifica se o alvo está vivo
-                    if not isPlayerAlive(selectedTarget) then
-                        ui.afStatus.Text = "Status: " .. selectedTarget.Name .. " está morto. Cooldown..."
-                        ui.notificationSystem:Show("💀 " .. selectedTarget.Name .. " morreu! Aguardando " .. CONFIG.AUTO_FARM_INTERVAL .. "s")
-                        
-                        for i = CONFIG.AUTO_FARM_INTERVAL, 1, -1 do
-                            if not CONFIG.AUTO_FARM_ENABLED then break end
-                            ui.afStatus.Text = "Status: Cooldown " .. i .. "s..."
-                            task.wait(1)
-                        end
-                        
-                        if not CONFIG.AUTO_FARM_ENABLED then break end
-                        
-                        -- Depois do cooldown, verifica se reviveu
-                        if not isPlayerAlive(selectedTarget) then
-                            ui.afStatus.Text = "Status: Aguardando " .. selectedTarget.Name .. " renascer..."
-                            task.wait(2)
-                        end
-                    else
+                    if isPlayerAlive(selectedTarget) then
                         -- Teleporta para o alvo
                         pcall(function()
                             local targetChar = selectedTarget.Character
@@ -928,15 +896,92 @@ local function setupAutoFarm(ui)
                             doPunch()
                             task.wait(0.05)
                         end
+                        
+                        if not CONFIG.AUTO_FARM_ENABLED then break end
+                        
+                        -- Matou! Agora espera renascer
+                        ui.afStatus.Text = "Status: Aguardando " .. selectedTarget.Name .. " renascer..."
+                        ui.notificationSystem:Show("💀 " .. selectedTarget.Name .. " morreu! Aguardando renascer...")
+                        
+                        -- Espera o player renascer (não está vivo)
+                        while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do
+                            task.wait(0.5)
+                        end
+                        
+                        if not CONFIG.AUTO_FARM_ENABLED then break end
+                        
+                        -- Player renasceu! Espera 5 segundos pro escudo sair
+                        ui.afStatus.Text = "Status: Escudo saindo... 5s"
+                        ui.notificationSystem:Show("🛡️ " .. selectedTarget.Name .. " renasceu! Esperando escudo sumir (5s)...")
+                        
+                        for i = CONFIG.SHIELD_WAIT, 1, -1 do
+                            if not CONFIG.AUTO_FARM_ENABLED then break end
+                            ui.afStatus.Text = "Status: Aguardando escudo... " .. i .. "s"
+                            task.wait(1)
+                        end
+                    else
+                        -- Alvo não está vivo, espera renascer
+                        ui.afStatus.Text = "Status: Aguardando " .. selectedTarget.Name .. " renascer..."
+                        while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do
+                            task.wait(1)
+                        end
+                        
+                        if CONFIG.AUTO_FARM_ENABLED and isPlayerAlive(selectedTarget) then
+                            -- Espera o escudo
+                            ui.afStatus.Text = "Status: Escudo saindo... 5s"
+                            for i = CONFIG.SHIELD_WAIT, 1, -1 do
+                                if not CONFIG.AUTO_FARM_ENABLED then break end
+                                ui.afStatus.Text = "Status: Aguardando escudo... " .. i .. "s"
+                                task.wait(1)
+                            end
+                        end
                     end
                 end
             end)
         else
-            ui.afToggle.Text = "INICIAR"
+            ui.afToggle.Text = "INICIAR FARM"
             ui.afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             ui.afStatus.Text = "Status: Parado"
             ui.afStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
             ui.notificationSystem:Show("🤖 Auto Farm DESATIVADO!")
+        end
+    end)
+    
+    -- Botão FRZZ (Freeze)
+    local freezeConnection = nil
+    
+    ui.frzzToggle.MouseButton1Click:Connect(function()
+        CONFIG.FRZZ_ENABLED = not CONFIG.FRZZ_ENABLED
+        
+        if CONFIG.FRZZ_ENABLED then
+            ui.frzzToggle.Text = "FRZZ: ON"
+            ui.frzzToggle.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+            ui.notificationSystem:Show("🧊 Freeze ATIVADO!")
+            
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                CONFIG.frozenCFrame = char.HumanoidRootPart.CFrame
+            end
+            
+            freezeConnection = RunService.Heartbeat:Connect(function()
+                if not CONFIG.FRZZ_ENABLED then return end
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") and CONFIG.frozenCFrame then
+                    char.HumanoidRootPart.CFrame = CONFIG.frozenCFrame
+                    char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+                    char.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
+                end
+            end)
+        else
+            ui.frzzToggle.Text = "FRZZ: OFF"
+            ui.frzzToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            ui.notificationSystem:Show("🧊 Freeze DESATIVADO!")
+            CONFIG.frozenCFrame = nil
+            
+            if freezeConnection then
+                freezeConnection:Disconnect()
+                freezeConnection = nil
+            end
         end
     end)
     
@@ -979,7 +1024,6 @@ local function setupAutoFarm(ui)
         end)
     end
     
-    -- Atualizar lista quando abrir a página
     ui.autoFarmPage:GetPropertyChangedSignal("Visible"):Connect(function()
         if ui.autoFarmPage.Visible then updateTargetList() end
     end)
@@ -992,7 +1036,7 @@ local function setupAutoFarm(ui)
             ui.afTargetLabel.Text = "Alvo: Nenhum"
             if CONFIG.AUTO_FARM_ENABLED then
                 CONFIG.AUTO_FARM_ENABLED = false
-                ui.afToggle.Text = "INICIAR"
+                ui.afToggle.Text = "INICIAR FARM"
                 ui.afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             end
         end
