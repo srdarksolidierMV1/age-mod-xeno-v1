@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (CORRIGIDO)
-    Versão: 1.0.2
-    Fast Punch com evento correto
+    Versão: 1.0.3
+    Fast Punch com evento correto + Loop TP + Spawnpoint
 ]]
 
 -- Serviços
@@ -21,6 +21,10 @@ local CONFIG = {
     STAMINA_THRESHOLD = 10,
     TELEPORT_DISTANCE = 5,
     ANIMATION_SPEED = 0.3,
+    LOOP_TP_ENABLED = false,
+    LOOP_TP_TARGET = nil,
+    LOOP_TP_INTERVAL = 0.1,
+    SPAWNPOINT = nil,
 }
 
 -- ==================== NOTIFICAÇÕES ====================
@@ -36,55 +40,12 @@ function NotificationSystem:Show(message, duration)
     duration = duration or 2
     
     pcall(function()
-        local screenGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if not screenGui then return end
-        
-        local notification = Instance.new("Frame")
-        notification.Size = UDim2.new(0, 300, 0, 50)
-        notification.Position = UDim2.new(0.5, -150, 0, -60)
-        notification.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        notification.BackgroundTransparency = 0.1
-        notification.BorderSizePixel = 0
-        notification.ClipsDescendants = true
-        notification.Parent = screenGui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 12)
-        corner.Parent = notification
-        
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(100, 100, 100)
-        stroke.Thickness = 1
-        stroke.Transparency = 0.5
-        stroke.Parent = notification
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -20, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = message
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.Font = Enum.Font.GothamMedium
-        label.TextSize = 14
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = notification
-        
-        local enterTween = TweenService:Create(notification, 
-            TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Position = UDim2.new(0.5, -150, 0, 20)}
-        )
-        enterTween:Play()
-        
-        task.wait(duration)
-        
-        local exitTween = TweenService:Create(notification, 
-            TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-            {Position = UDim2.new(0.5, -150, 0, -60)}
-        )
-        exitTween:Play()
-        exitTween.Completed:Connect(function()
-            notification:Destroy()
-        end)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Age of Heroes",
+            Text = message,
+            Duration = duration,
+            Button1 = "OK"
+        })
     end)
 end
 
@@ -92,19 +53,20 @@ end
 local function createMainUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AgeOfHeroesUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    screenGui.Parent = game:GetService("CoreGui")  -- Mudado para CoreGui
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     -- Frame Principal
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 500, 0, 400)
-    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    mainFrame.Size = UDim2.new(0, 520, 0, 420)
+    mainFrame.Position = UDim2.new(0.5, -260, 0.5, -210)
     mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     mainFrame.BackgroundTransparency = 0.05
     mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
+    mainFrame.Active = true
     mainFrame.Parent = screenGui
     
     local mainCorner = Instance.new("UICorner")
@@ -224,13 +186,13 @@ local function createMainUI()
     -- Botões de Navegação
     local function createNavButton(text, position)
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -20, 0, 40)
+        button.Size = UDim2.new(1, -20, 0, 35)
         button.Position = UDim2.new(0, 10, 0, position)
         button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         button.Text = text
         button.TextColor3 = Color3.fromRGB(200, 200, 200)
         button.Font = Enum.Font.GothamMedium
-        button.TextSize = 14
+        button.TextSize = 13
         button.BorderSizePixel = 0
         button.Parent = navBar
         
@@ -244,7 +206,7 @@ local function createMainUI()
     -- Páginas
     local pages = {}
     
-    -- Página Fast Punch
+    -- ========== PÁGINA FAST PUNCH (MANTIDA ORIGINAL) ==========
     local fastPunchPage = Instance.new("Frame")
     fastPunchPage.Name = "FastPunchPage"
     fastPunchPage.Size = UDim2.new(1, 0, 1, 0)
@@ -303,7 +265,7 @@ local function createMainUI()
     staminaLabel.TextXAlignment = Enum.TextXAlignment.Center
     staminaLabel.Parent = fastPunchPage
     
-    -- Página Player Teleport
+    -- ========== PÁGINA TELEPORT (MODIFICADA) ==========
     local teleportPage = Instance.new("Frame")
     teleportPage.Name = "TeleportPage"
     teleportPage.Size = UDim2.new(1, 0, 1, 0)
@@ -313,25 +275,26 @@ local function createMainUI()
     pages["Teleport"] = teleportPage
     
     local tpTitle = Instance.new("TextLabel")
-    tpTitle.Size = UDim2.new(1, 0, 0, 30)
-    tpTitle.Position = UDim2.new(0, 0, 0, 10)
+    tpTitle.Size = UDim2.new(1, 0, 0, 25)
+    tpTitle.Position = UDim2.new(0, 0, 0, 5)
     tpTitle.BackgroundTransparency = 1
     tpTitle.Text = "🌍 Player Teleport"
     tpTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     tpTitle.Font = Enum.Font.GothamBold
-    tpTitle.TextSize = 18
+    tpTitle.TextSize = 16
     tpTitle.TextXAlignment = Enum.TextXAlignment.Center
     tpTitle.Parent = teleportPage
     
-    -- Lista de Jogadores
+    -- Lista de Jogadores (altura reduzida para caber o Loop TP)
     local playerList = Instance.new("ScrollingFrame")
     playerList.Name = "PlayerList"
-    playerList.Size = UDim2.new(1, -20, 1, -60)
-    playerList.Position = UDim2.new(0, 10, 0, 50)
+    playerList.Size = UDim2.new(1, -20, 0.55, 0)
+    playerList.Position = UDim2.new(0, 10, 0, 35)
     playerList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     playerList.BorderSizePixel = 0
-    playerList.ScrollBarThickness = 6
+    playerList.ScrollBarThickness = 4
     playerList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
     playerList.Parent = teleportPage
     
     local listCorner = Instance.new("UICorner")
@@ -339,14 +302,136 @@ local function createMainUI()
     listCorner.Parent = playerList
     
     local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, 5)
+    listLayout.Padding = UDim.new(0, 3)
     listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.SortOrder = Enum.SortOrder.Name
     listLayout.Parent = playerList
     
+    -- Painel de Loop TP
+    local loopFrame = Instance.new("Frame")
+    loopFrame.Size = UDim2.new(1, -20, 0, 110)
+    loopFrame.Position = UDim2.new(0, 10, 0, 245)
+    loopFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    loopFrame.BorderSizePixel = 0
+    loopFrame.Parent = teleportPage
+    
+    local loopCorner = Instance.new("UICorner")
+    loopCorner.CornerRadius = UDim.new(0, 12)
+    loopCorner.Parent = loopFrame
+    
+    local loopTitle = Instance.new("TextLabel")
+    loopTitle.Size = UDim2.new(1, 0, 0, 22)
+    loopTitle.Position = UDim2.new(0, 0, 0, 5)
+    loopTitle.BackgroundTransparency = 1
+    loopTitle.Text = "🔄 Loop TP"
+    loopTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loopTitle.Font = Enum.Font.GothamBold
+    loopTitle.TextSize = 13
+    loopTitle.TextXAlignment = Enum.TextXAlignment.Center
+    loopTitle.Parent = loopFrame
+    
+    local loopTargetLabel = Instance.new("TextLabel")
+    loopTargetLabel.Size = UDim2.new(1, -10, 0, 18)
+    loopTargetLabel.Position = UDim2.new(0, 5, 0, 30)
+    loopTargetLabel.BackgroundTransparency = 1
+    loopTargetLabel.Text = "Alvo: Nenhum"
+    loopTargetLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    loopTargetLabel.Font = Enum.Font.GothamMedium
+    loopTargetLabel.TextSize = 11
+    loopTargetLabel.TextXAlignment = Enum.TextXAlignment.Center
+    loopTargetLabel.Parent = loopFrame
+    
+    local loopToggle = Instance.new("TextButton")
+    loopToggle.Size = UDim2.new(0.6, 0, 0, 28)
+    loopToggle.Position = UDim2.new(0.2, 0, 0, 58)
+    loopToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+    loopToggle.Text = "INICIAR LOOP"
+    loopToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loopToggle.Font = Enum.Font.GothamBold
+    loopToggle.TextSize = 11
+    loopToggle.BorderSizePixel = 0
+    loopToggle.Parent = loopFrame
+    
+    local loopCorner2 = Instance.new("UICorner")
+    loopCorner2.CornerRadius = UDim.new(0, 8)
+    loopCorner2.Parent = loopToggle
+    
+    -- ========== PÁGINA SPAWNPOINT (NOVA) ==========
+    local spawnPage = Instance.new("Frame")
+    spawnPage.Size = UDim2.new(1, 0, 1, 0)
+    spawnPage.BackgroundTransparency = 1
+    spawnPage.Visible = false
+    spawnPage.Parent = mainContent
+    pages["Spawn"] = spawnPage
+    
+    local spTitle = Instance.new("TextLabel")
+    spTitle.Size = UDim2.new(1, 0, 0, 25)
+    spTitle.Position = UDim2.new(0, 0, 0, 10)
+    spTitle.BackgroundTransparency = 1
+    spTitle.Text = "📍 Set Spawnpoint"
+    spTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    spTitle.Font = Enum.Font.GothamBold
+    spTitle.TextSize = 16
+    spTitle.TextXAlignment = Enum.TextXAlignment.Center
+    spTitle.Parent = spawnPage
+    
+    local spDesc = Instance.new("TextLabel")
+    spDesc.Size = UDim2.new(1, -20, 0, 50)
+    spDesc.Position = UDim2.new(0, 10, 0, 45)
+    spDesc.BackgroundTransparency = 1
+    spDesc.Text = "Define seu ponto de respawn no local atual. Ao morrer, você renascerá aqui!"
+    spDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
+    spDesc.Font = Enum.Font.GothamMedium
+    spDesc.TextSize = 12
+    spDesc.TextWrapped = true
+    spDesc.TextXAlignment = Enum.TextXAlignment.Center
+    spDesc.Parent = spawnPage
+    
+    local spStatus = Instance.new("TextLabel")
+    spStatus.Size = UDim2.new(1, -20, 0, 25)
+    spStatus.Position = UDim2.new(0, 10, 0, 110)
+    spStatus.BackgroundTransparency = 1
+    spStatus.Text = "Spawnpoint: Não definido"
+    spStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+    spStatus.Font = Enum.Font.GothamMedium
+    spStatus.TextSize = 13
+    spStatus.TextXAlignment = Enum.TextXAlignment.Center
+    spStatus.Parent = spawnPage
+    
+    local setSpawnBtn = Instance.new("TextButton")
+    setSpawnBtn.Size = UDim2.new(0.5, 0, 0, 45)
+    setSpawnBtn.Position = UDim2.new(0.25, 0, 0, 150)
+    setSpawnBtn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+    setSpawnBtn.Text = "🎯 DEFINIR SPAWN"
+    setSpawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    setSpawnBtn.Font = Enum.Font.GothamBold
+    setSpawnBtn.TextSize = 14
+    setSpawnBtn.BorderSizePixel = 0
+    setSpawnBtn.Parent = spawnPage
+    
+    local spCorner = Instance.new("UICorner")
+    spCorner.CornerRadius = UDim.new(0, 10)
+    spCorner.Parent = setSpawnBtn
+    
+    local clearSpawnBtn = Instance.new("TextButton")
+    clearSpawnBtn.Size = UDim2.new(0.5, 0, 0, 35)
+    clearSpawnBtn.Position = UDim2.new(0.25, 0, 0, 210)
+    clearSpawnBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+    clearSpawnBtn.Text = "🗑️ LIMPAR SPAWN"
+    clearSpawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clearSpawnBtn.Font = Enum.Font.GothamBold
+    clearSpawnBtn.TextSize = 12
+    clearSpawnBtn.BorderSizePixel = 0
+    clearSpawnBtn.Parent = spawnPage
+    
+    local spCorner2 = Instance.new("UICorner")
+    spCorner2.CornerRadius = UDim.new(0, 8)
+    spCorner2.Parent = clearSpawnBtn
+    
     -- Botões de Navegação
-    local fastPunchBtn = createNavButton("⚡ Fast Punch", 20)
-    local teleportBtn = createNavButton("🌍 Teleport", 70)
+    local fastPunchBtn = createNavButton("⚡ Fast Punch", 15)
+    local teleportBtn = createNavButton("🌍 Teleport", 55)
+    local spawnBtn = createNavButton("📍 Spawnpoint", 95)
     
     -- Sistema de arrastar
     local dragging = false
@@ -354,7 +439,8 @@ local function createMainUI()
     local startPos = nil
     
     titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = mainFrame.Position
@@ -362,7 +448,8 @@ local function createMainUI()
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+           input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             mainFrame.Position = UDim2.new(
                 startPos.X.Scale, 
@@ -374,7 +461,8 @@ local function createMainUI()
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
@@ -385,22 +473,22 @@ local function createMainUI()
             page.Visible = (name == pageName)
         end
         
+        fastPunchBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        teleportBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        spawnBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        
         if pageName == "FastPunch" then
             fastPunchBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            teleportBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        else
-            fastPunchBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        elseif pageName == "Teleport" then
             teleportBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        elseif pageName == "Spawn" then
+            spawnBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
         end
     end
     
-    fastPunchBtn.MouseButton1Click:Connect(function()
-        switchPage("FastPunch")
-    end)
-    
-    teleportBtn.MouseButton1Click:Connect(function()
-        switchPage("Teleport")
-    end)
+    fastPunchBtn.MouseButton1Click:Connect(function() switchPage("FastPunch") end)
+    teleportBtn.MouseButton1Click:Connect(function() switchPage("Teleport") end)
+    spawnBtn.MouseButton1Click:Connect(function() switchPage("Spawn") end)
     
     -- Minimizar/Restaurar
     local isMinimized = false
@@ -412,7 +500,7 @@ local function createMainUI()
         if isMinimized then
             TweenService:Create(mainFrame, 
                 TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, 500, 0, 45)}
+                {Size = UDim2.new(0, 520, 0, 45)}
             ):Play()
             minimizeButton.Text = "□"
         else
@@ -426,6 +514,8 @@ local function createMainUI()
     
     -- Fechar
     closeButton.MouseButton1Click:Connect(function()
+        CONFIG.FAST_PUNCH_ENABLED = false
+        CONFIG.LOOP_TP_ENABLED = false
         TweenService:Create(mainFrame, 
             TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
             {Size = UDim2.new(0, 0, 0, 0)}
@@ -444,181 +534,4 @@ local function createMainUI()
         pages = pages,
         teleportPage = teleportPage,
         fastPunchPage = fastPunchPage,
-    }
-end
-
--- ==================== SISTEMA DE TELEPORTE ====================
-local function setupTeleportSystem(ui)
-    local function updatePlayerList()
-        pcall(function()
-            for _, child in pairs(ui.playerList:GetChildren()) do
-                if child:IsA("TextButton") then
-                    child:Destroy()
-                end
-            end
-            
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer then
-                    local btn = Instance.new("TextButton")
-                    btn.Size = UDim2.new(0.9, 0, 0, 35)
-                    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                    btn.Text = player.Name
-                    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    btn.Font = Enum.Font.GothamMedium
-                    btn.TextSize = 14
-                    btn.BorderSizePixel = 0
-                    btn.Parent = ui.playerList
-                    
-                    local btnCorner = Instance.new("UICorner")
-                    btnCorner.CornerRadius = UDim.new(0, 8)
-                    btnCorner.Parent = btn
-                    
-                    btn.MouseButton1Click:Connect(function()
-                        pcall(function()
-                            local targetChar = player.Character
-                            if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then
-                                ui.notificationSystem:Show("❌ Jogador sem personagem!")
-                                return
-                            end
-                            
-                            local myChar = LocalPlayer.Character
-                            if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
-                                ui.notificationSystem:Show("❌ Você está sem personagem!")
-                                return
-                            end
-                            
-                            local targetPos = targetChar.HumanoidRootPart.Position
-                            local myHRP = myChar.HumanoidRootPart
-                            local distance = (targetPos - myHRP.Position).Magnitude
-                            
-                            if distance > CONFIG.TELEPORT_DISTANCE then
-                                ui.notificationSystem:Show("❌ Jogador muito longe! (" .. math.floor(distance) .. "m)")
-                                return
-                            end
-                            
-                            myHRP.CFrame = targetChar.HumanoidRootPart.CFrame
-                            ui.notificationSystem:Show("✅ Teleportado para " .. player.Name)
-                        end)
-                    end)
-                end
-            end
-        end)
-    end
-    
-    ui.teleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
-        if ui.teleportPage.Visible then
-            updatePlayerList()
-        end
-    end)
-    
-    Players.PlayerAdded:Connect(updatePlayerList)
-    Players.PlayerRemoving:Connect(updatePlayerList)
-    
-    task.spawn(function()
-        while true do
-            task.wait(5)
-            if ui.teleportPage.Visible then
-                updatePlayerList()
-            end
-        end
-    end)
-end
-
--- ==================== SISTEMA FAST PUNCH (CORRIGIDO) ====================
-local function setupFastPunch(ui)
-    local isRunning = false
-    
-    -- 🔧 EVENTO CORRETO DO AGE OF HEROES
-    local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
-    
-    -- Se não encontrou, tenta alternativas
-    if not PUNCH_EVENT then
-        PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch")
-    end
-    
-    -- Notifica se encontrou ou não
-    if PUNCH_EVENT then
-        ui.notificationSystem:Show("✅ Fast Punch pronto!")
-    else
-        ui.notificationSystem:Show("⚠️ Evento de soco não encontrado!")
-    end
-    
-    -- ARGUMENTOS CORRETOS DO AGE OF HEROES
-    local PUNCH_ARGS = {0, 0.1, 1}
-    
-    local function getStamina()
-        local character = LocalPlayer.Character
-        if not character then return 0 end
-        
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid then return 0 end
-        
-        -- Tenta diferentes formas de stamina
-        local stamina = character:GetAttribute("Stamina") or character:GetAttribute("Energy")
-        if stamina then return stamina end
-        
-        stamina = character:FindFirstChild("Stamina")
-        if stamina and stamina:IsA("NumberValue") then
-            return stamina.Value
-        end
-        
-        return humanoid.Health
-    end
-    
-    local function doPunch()
-        if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then
-            pcall(function()
-                PUNCH_EVENT:FireServer(unpack(PUNCH_ARGS))
-            end)
-        end
-    end
-    
-    local function fastPunchLoop()
-        isRunning = true
-        while CONFIG.FAST_PUNCH_ENABLED and isRunning do
-            local stamina = getStamina()
-            ui.staminaLabel.Text = "Stamina: " .. math.floor(stamina)
-            
-            if stamina < CONFIG.STAMINA_THRESHOLD then
-                ui.staminaLabel.TextColor3 = Color3.fromRGB(231, 76, 60)
-                task.wait(0.5)
-            else
-                ui.staminaLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-                doPunch()
-                task.wait(CONFIG.FAST_PUNCH_SPEED)
-            end
-        end
-    end
-    
-    ui.fpToggle.MouseButton1Click:Connect(function()
-        CONFIG.FAST_PUNCH_ENABLED = not CONFIG.FAST_PUNCH_ENABLED
-        
-        if CONFIG.FAST_PUNCH_ENABLED then
-            ui.fpToggle.Text = "ON"
-            ui.fpToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-            ui.notificationSystem:Show("⚡ Fast Punch ATIVADO!")
-            
-            if not isRunning then
-                task.spawn(fastPunchLoop)
-            end
-        else
-            ui.fpToggle.Text = "OFF"
-            ui.fpToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-            ui.notificationSystem:Show("⚡ Fast Punch DESATIVADO!")
-            isRunning = false
-            ui.staminaLabel.Text = "Stamina: --"
-            ui.staminaLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        end
-    end)
-end
-
--- ==================== INICIALIZAÇÃO ====================
-local function initialize()
-    pcall(function()
-        local ui = createMainUI()
-        setupFastPunch(ui)
-        setupTeleportSystem(ui)
-    end)
-end
-
-initialize()
+        spawnPage = spawn
