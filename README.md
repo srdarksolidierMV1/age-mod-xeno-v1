@@ -1,7 +1,7 @@
 --[[
-    Age of Heroes - Premium (CORRIGIDO)
-    Versão: 1.0.3
-    Fast Punch com evento correto + Loop TP + Spawnpoint
+    Age of Heroes - Premium (COMPLETO)
+    Versão: 1.0.4
+    Fast Punch + Teleporte Funcional + Loop TP + Spawnpoint
 ]]
 
 -- Serviços
@@ -53,7 +53,7 @@ end
 local function createMainUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AgeOfHeroesUI"
-    screenGui.Parent = game:GetService("CoreGui")  -- Mudado para CoreGui
+    screenGui.Parent = game:GetService("CoreGui")
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
@@ -206,7 +206,7 @@ local function createMainUI()
     -- Páginas
     local pages = {}
     
-    -- ========== PÁGINA FAST PUNCH (MANTIDA ORIGINAL) ==========
+    -- ========== PÁGINA FAST PUNCH ==========
     local fastPunchPage = Instance.new("Frame")
     fastPunchPage.Name = "FastPunchPage"
     fastPunchPage.Size = UDim2.new(1, 0, 1, 0)
@@ -265,7 +265,7 @@ local function createMainUI()
     staminaLabel.TextXAlignment = Enum.TextXAlignment.Center
     staminaLabel.Parent = fastPunchPage
     
-    -- ========== PÁGINA TELEPORT (MODIFICADA) ==========
+    -- ========== PÁGINA TELEPORT ==========
     local teleportPage = Instance.new("Frame")
     teleportPage.Name = "TeleportPage"
     teleportPage.Size = UDim2.new(1, 0, 1, 0)
@@ -285,7 +285,7 @@ local function createMainUI()
     tpTitle.TextXAlignment = Enum.TextXAlignment.Center
     tpTitle.Parent = teleportPage
     
-    -- Lista de Jogadores (altura reduzida para caber o Loop TP)
+    -- Lista de Jogadores
     local playerList = Instance.new("ScrollingFrame")
     playerList.Name = "PlayerList"
     playerList.Size = UDim2.new(1, -20, 0.55, 0)
@@ -356,7 +356,7 @@ local function createMainUI()
     loopCorner2.CornerRadius = UDim.new(0, 8)
     loopCorner2.Parent = loopToggle
     
-    -- ========== PÁGINA SPAWNPOINT (NOVA) ==========
+    -- ========== PÁGINA SPAWNPOINT ==========
     local spawnPage = Instance.new("Frame")
     spawnPage.Size = UDim2.new(1, 0, 1, 0)
     spawnPage.BackgroundTransparency = 1
@@ -534,4 +534,7 @@ local function createMainUI()
         pages = pages,
         teleportPage = teleportPage,
         fastPunchPage = fastPunchPage,
-        spawnPage = spawn
+        spawnPage = spawnPage,
+        loopToggle = loopToggle,
+        loopTargetLabel = loopTargetLabel,
+        setSpawnBt
