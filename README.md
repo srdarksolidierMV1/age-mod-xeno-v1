@@ -1,6 +1,6 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 1.0.3
+    Versão: 1.0.4
     Fast Punch original + Teleport + Loop TP + Spawnpoint
 ]]
 
@@ -606,24 +606,28 @@ local function setupFastPunch(ui)
     end)
 end
 
--- ==================== SISTEMA DE TELEPORTE ====================
+-- ==================== SISTEMA DE TELEPORTE (CORRIGIDO) ====================
 local function setupTeleportSystem(ui)
     local selectedPlayer = nil
     
-    local function teleportToPlayer(player)
-        if not player then return end
+    -- Teleporte sem notificação (usado pelo loop)
+    local function teleportToPlayerSilent(player)
+        if not player then return false end
         local targetChar = player.Character
-        if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then
-            ui.notificationSystem:Show("❌ Jogador sem personagem!")
-            return
-        end
+        if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
         local myChar = LocalPlayer.Character
-        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
-            ui.notificationSystem:Show("❌ Você está sem personagem!")
-            return
+        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
+        myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5)
+        return true
+    end
+    
+    -- Teleporte com notificação (usado no clique único)
+    local function teleportToPlayer(player)
+        if teleportToPlayerSilent(player) then
+            ui.notificationSystem:Show("✅ Teleportado para " .. player.Name)
+        else
+            ui.notificationSystem:Show("❌ Falha ao teleportar!")
         end
-        myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
-        ui.notificationSystem:Show("✅ Teleportado para " .. player.Name)
     end
     
     local function updatePlayerList()
@@ -654,7 +658,7 @@ local function setupTeleportSystem(ui)
                             if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end
                         end
                         btn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-                        teleportToPlayer(player)
+                        teleportToPlayer(player) -- Com notificação
                     end)
                     
                     ySize = ySize + 38
@@ -664,7 +668,7 @@ local function setupTeleportSystem(ui)
         end)
     end
     
-    -- Loop TP
+    -- Loop TP (sem spam de notificação)
     ui.loopToggle.MouseButton1Click:Connect(function()
         CONFIG.LOOP_TP_ENABLED = not CONFIG.LOOP_TP_ENABLED
         if CONFIG.LOOP_TP_ENABLED then
@@ -676,10 +680,11 @@ local function setupTeleportSystem(ui)
             ui.loopToggle.Text = "PARAR LOOP"
             ui.loopToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
             CONFIG.LOOP_TP_TARGET = selectedPlayer
-            ui.notificationSystem:Show("🔄 Loop TP iniciado!")
+            ui.notificationSystem:Show("🔄 Loop TP iniciado em " .. selectedPlayer.Name) -- Só uma vez
+            
             task.spawn(function()
                 while CONFIG.LOOP_TP_ENABLED and CONFIG.LOOP_TP_TARGET do
-                    teleportToPlayer(CONFIG.LOOP_TP_TARGET)
+                    teleportToPlayerSilent(CONFIG.LOOP_TP_TARGET) -- Sem notificação
                     task.wait(CONFIG.LOOP_TP_INTERVAL)
                 end
             end)
@@ -687,7 +692,7 @@ local function setupTeleportSystem(ui)
             ui.loopToggle.Text = "INICIAR LOOP"
             ui.loopToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             CONFIG.LOOP_TP_TARGET = nil
-            ui.notificationSystem:Show("🔄 Loop TP DESATIVADO")
+            ui.notificationSystem:Show("🔄 Loop TP DESATIVADO") -- Só uma vez
         end
     end)
     
