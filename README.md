@@ -53,7 +53,7 @@ end
 local function createMainUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AgeOfHeroesUI"
-    screenGui.Parent = game:GetService("CoreGui")
+    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
@@ -379,7 +379,7 @@ local function createMainUI()
     spDesc.Size = UDim2.new(1, -20, 0, 50)
     spDesc.Position = UDim2.new(0, 10, 0, 45)
     spDesc.BackgroundTransparency = 1
-    spDesc.Text = "Define seu ponto de respawn no local atual. Ao morrer, você renascerá aqui!"
+    spDesc.Text = "Define seu ponto de respawn no local atual."
     spDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
     spDesc.Font = Enum.Font.GothamMedium
     spDesc.TextSize = 12
@@ -537,4 +537,5 @@ local function createMainUI()
         spawnPage = spawnPage,
         loopToggle = loopToggle,
         loopTargetLabel = loopTargetLabel,
-        setSpawnBt
+        setSpawnBtn = setSpawnBtn,
+    
