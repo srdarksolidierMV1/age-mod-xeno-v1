@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 2.1.0
-    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill Automático + FRZZ
+    Versão: 2.3.1
+    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill com Reset + Aura de Dano + FRZZ + Anti AFK
 ]]
 
 -- Serviços
@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -26,9 +27,13 @@ local CONFIG = {
     LOOP_TP_INTERVAL = 0.1,
     SPAWNPOINT = nil,
     AUTO_FARM_ENABLED = false,
-    SHIELD_WAIT = 5, -- Espera 5 segundos após renascer (escudo)
+    SHIELD_WAIT = 5,
     FRZZ_ENABLED = false,
     frozenCFrame = nil,
+    AURA_ENABLED = false,
+    AURA_INTERVAL = 5,
+    ANTI_AFK_ENABLED = false,
+    ANTI_AFK_INTERVAL = 180, -- 3 minutos
 }
 
 -- ==================== NOTIFICAÇÕES ====================
@@ -75,19 +80,6 @@ local function createMainUI()
     mainCorner.CornerRadius = UDim.new(0, 16)
     mainCorner.Parent = mainFrame
     
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.Size = UDim2.new(1, 20, 1, 20)
-    shadow.Position = UDim2.new(0, -10, 0, -10)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://6014261993"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.6
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    shadow.ZIndex = -1
-    shadow.Parent = mainFrame
-    
     -- Barra de Título
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
@@ -129,10 +121,7 @@ local function createMainUI()
     minimizeButton.TextSize = 18
     minimizeButton.BorderSizePixel = 0
     minimizeButton.Parent = titleBar
-    
-    local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, 8)
-    minCorner.Parent = minimizeButton
+    Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 8)
     
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
@@ -145,10 +134,7 @@ local function createMainUI()
     closeButton.TextSize = 18
     closeButton.BorderSizePixel = 0
     closeButton.Parent = titleBar
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 8)
-    closeCorner.Parent = closeButton
+    Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
     
     -- Container de Conteúdo
     local contentFrame = Instance.new("Frame")
@@ -197,20 +183,15 @@ local function createMainUI()
         button.TextSize = 11
         button.BorderSizePixel = 0
         button.Parent = navBar
-        
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 8)
-        btnCorner.Parent = button
-        
+        Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
         return button
     end
     
     -- Páginas
     local pages = {}
     
-    -- ========== PÁGINA FAST PUNCH (ORIGINAL) ==========
+    -- ========== PÁGINA FAST PUNCH ==========
     local fastPunchPage = Instance.new("Frame")
-    fastPunchPage.Name = "FastPunchPage"
     fastPunchPage.Size = UDim2.new(1, 0, 1, 0)
     fastPunchPage.BackgroundTransparency = 1
     fastPunchPage.Visible = true
@@ -241,7 +222,6 @@ local function createMainUI()
     fpDesc.Parent = fastPunchPage
     
     local fpToggle = Instance.new("TextButton")
-    fpToggle.Name = "FastPunchToggle"
     fpToggle.Size = UDim2.new(0.4, 0, 0, 50)
     fpToggle.Position = UDim2.new(0.3, 0, 0, 110)
     fpToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
@@ -251,10 +231,7 @@ local function createMainUI()
     fpToggle.TextSize = 20
     fpToggle.BorderSizePixel = 0
     fpToggle.Parent = fastPunchPage
-    
-    local fpToggleCorner = Instance.new("UICorner")
-    fpToggleCorner.CornerRadius = UDim.new(0, 12)
-    fpToggleCorner.Parent = fpToggle
+    Instance.new("UICorner", fpToggle).CornerRadius = UDim.new(0, 12)
     
     local staminaLabel = Instance.new("TextLabel")
     staminaLabel.Size = UDim2.new(1, -20, 0, 30)
@@ -267,7 +244,7 @@ local function createMainUI()
     staminaLabel.TextXAlignment = Enum.TextXAlignment.Center
     staminaLabel.Parent = fastPunchPage
     
-    -- ========== PÁGINA AUTO FARM KILL ==========
+    -- ========== PÁGINA AUTO FARM KILL + AURA ==========
     local autoFarmPage = Instance.new("Frame")
     autoFarmPage.Size = UDim2.new(1, 0, 1, 0)
     autoFarmPage.BackgroundTransparency = 1
@@ -277,56 +254,56 @@ local function createMainUI()
     
     local afTitle = Instance.new("TextLabel")
     afTitle.Size = UDim2.new(1, 0, 0, 22)
-    afTitle.Position = UDim2.new(0, 0, 0, 5)
+    afTitle.Position = UDim2.new(0, 0, 0, 3)
     afTitle.BackgroundTransparency = 1
-    afTitle.Text = "🤖 Auto Farm Kill"
+    afTitle.Text = "🤖 Auto Farm Kill + Reset"
     afTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     afTitle.Font = Enum.Font.GothamBold
-    afTitle.TextSize = 15
+    afTitle.TextSize = 13
     afTitle.TextXAlignment = Enum.TextXAlignment.Center
     afTitle.Parent = autoFarmPage
     
-    local afDesc = Instance.new("TextLabel")
-    afDesc.Size = UDim2.new(1, -20, 0, 25)
-    afDesc.Position = UDim2.new(0, 10, 0, 28)
-    afDesc.BackgroundTransparency = 1
-    afDesc.Text = "Mata → espera renascer → espera 5s (escudo) → mata"
-    afDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
-    afDesc.Font = Enum.Font.GothamMedium
-    afDesc.TextSize = 9
-    afDesc.TextWrapped = true
-    afDesc.TextXAlignment = Enum.TextXAlignment.Center
-    afDesc.Parent = autoFarmPage
-    
-    -- Botões INICIAR + FRZZ
+    -- Botões: INICIAR + FRZZ + AURA
     local afToggle = Instance.new("TextButton")
-    afToggle.Size = UDim2.new(0.4, 0, 0, 28)
-    afToggle.Position = UDim2.new(0.08, 0, 0, 58)
+    afToggle.Size = UDim2.new(0.3, 0, 0, 24)
+    afToggle.Position = UDim2.new(0.02, 0, 0, 30)
     afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    afToggle.Text = "INICIAR FARM"
+    afToggle.Text = "INICIAR"
     afToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     afToggle.Font = Enum.Font.GothamBold
-    afToggle.TextSize = 10
+    afToggle.TextSize = 9
     afToggle.BorderSizePixel = 0
     afToggle.Parent = autoFarmPage
     Instance.new("UICorner", afToggle).CornerRadius = UDim.new(0, 6)
     
     local frzzToggle = Instance.new("TextButton")
-    frzzToggle.Size = UDim2.new(0.4, 0, 0, 28)
-    frzzToggle.Position = UDim2.new(0.52, 0, 0, 58)
+    frzzToggle.Size = UDim2.new(0.3, 0, 0, 24)
+    frzzToggle.Position = UDim2.new(0.35, 0, 0, 30)
     frzzToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     frzzToggle.Text = "FRZZ: OFF"
     frzzToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     frzzToggle.Font = Enum.Font.GothamBold
-    frzzToggle.TextSize = 10
+    frzzToggle.TextSize = 9
     frzzToggle.BorderSizePixel = 0
     frzzToggle.Parent = autoFarmPage
     Instance.new("UICorner", frzzToggle).CornerRadius = UDim.new(0, 6)
     
+    local auraToggle = Instance.new("TextButton")
+    auraToggle.Size = UDim2.new(0.3, 0, 0, 24)
+    auraToggle.Position = UDim2.new(0.68, 0, 0, 30)
+    auraToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    auraToggle.Text = "AURA: OFF"
+    auraToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    auraToggle.Font = Enum.Font.GothamBold
+    auraToggle.TextSize = 9
+    auraToggle.BorderSizePixel = 0
+    auraToggle.Parent = autoFarmPage
+    Instance.new("UICorner", auraToggle).CornerRadius = UDim.new(0, 6)
+    
     -- Status
     local afStatus = Instance.new("TextLabel")
     afStatus.Size = UDim2.new(1, -20, 0, 16)
-    afStatus.Position = UDim2.new(0, 10, 0, 92)
+    afStatus.Position = UDim2.new(0, 10, 0, 60)
     afStatus.BackgroundTransparency = 1
     afStatus.Text = "Status: Parado"
     afStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -337,7 +314,7 @@ local function createMainUI()
     
     local afTargetLabel = Instance.new("TextLabel")
     afTargetLabel.Size = UDim2.new(1, -20, 0, 16)
-    afTargetLabel.Position = UDim2.new(0, 10, 0, 110)
+    afTargetLabel.Position = UDim2.new(0, 10, 0, 78)
     afTargetLabel.BackgroundTransparency = 1
     afTargetLabel.Text = "Alvo: Nenhum"
     afTargetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -346,10 +323,22 @@ local function createMainUI()
     afTargetLabel.TextXAlignment = Enum.TextXAlignment.Center
     afTargetLabel.Parent = autoFarmPage
     
-    -- Label "Selecione o alvo:"
+    -- Botão Anti AFK
+    local antiAfkToggle = Instance.new("TextButton")
+    antiAfkToggle.Size = UDim2.new(1, -20, 0, 22)
+    antiAfkToggle.Position = UDim2.new(0, 10, 0, 96)
+    antiAfkToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    antiAfkToggle.Text = "🛡️ ANTI AFK: OFF (Pula a cada 3min)"
+    antiAfkToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    antiAfkToggle.Font = Enum.Font.GothamBold
+    antiAfkToggle.TextSize = 9
+    antiAfkToggle.BorderSizePixel = 0
+    antiAfkToggle.Parent = autoFarmPage
+    Instance.new("UICorner", antiAfkToggle).CornerRadius = UDim.new(0, 6)
+    
     local selectLabel = Instance.new("TextLabel")
     selectLabel.Size = UDim2.new(1, -20, 0, 16)
-    selectLabel.Position = UDim2.new(0, 10, 0, 128)
+    selectLabel.Position = UDim2.new(0, 10, 0, 122)
     selectLabel.BackgroundTransparency = 1
     selectLabel.Text = "🎯 Selecione o alvo:"
     selectLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -360,8 +349,8 @@ local function createMainUI()
     
     -- Lista de alvos
     local targetList = Instance.new("ScrollingFrame")
-    targetList.Size = UDim2.new(1, -20, 0.5, 0)
-    targetList.Position = UDim2.new(0, 10, 0, 146)
+    targetList.Size = UDim2.new(1, -20, 0.45, 0)
+    targetList.Position = UDim2.new(0, 10, 0, 140)
     targetList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     targetList.BorderSizePixel = 0
     targetList.ScrollBarThickness = 3
@@ -375,7 +364,6 @@ local function createMainUI()
     
     -- ========== PÁGINA TELEPORT ==========
     local teleportPage = Instance.new("Frame")
-    teleportPage.Name = "TeleportPage"
     teleportPage.Size = UDim2.new(1, 0, 1, 0)
     teleportPage.BackgroundTransparency = 1
     teleportPage.Visible = false
@@ -394,19 +382,14 @@ local function createMainUI()
     tpTitle.Parent = teleportPage
     
     local playerList = Instance.new("ScrollingFrame")
-    playerList.Name = "PlayerList"
     playerList.Size = UDim2.new(1, -20, 0.5, 0)
     playerList.Position = UDim2.new(0, 10, 0, 35)
     playerList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     playerList.BorderSizePixel = 0
     playerList.ScrollBarThickness = 4
-    playerList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
     playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
     playerList.Parent = teleportPage
-    
-    local listCorner = Instance.new("UICorner")
-    listCorner.CornerRadius = UDim.new(0, 12)
-    listCorner.Parent = playerList
+    Instance.new("UICorner", playerList).CornerRadius = UDim.new(0, 12)
     
     local listLayout = Instance.new("UIListLayout")
     listLayout.Padding = UDim.new(0, 3)
@@ -419,10 +402,7 @@ local function createMainUI()
     loopFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     loopFrame.BorderSizePixel = 0
     loopFrame.Parent = teleportPage
-    
-    local loopCorner = Instance.new("UICorner")
-    loopCorner.CornerRadius = UDim.new(0, 12)
-    loopCorner.Parent = loopFrame
+    Instance.new("UICorner", loopFrame).CornerRadius = UDim.new(0, 12)
     
     local loopTitle = Instance.new("TextLabel")
     loopTitle.Size = UDim2.new(1, 0, 0, 22)
@@ -456,10 +436,7 @@ local function createMainUI()
     loopToggle.TextSize = 11
     loopToggle.BorderSizePixel = 0
     loopToggle.Parent = loopFrame
-    
-    local loopCorner2 = Instance.new("UICorner")
-    loopCorner2.CornerRadius = UDim.new(0, 8)
-    loopCorner2.Parent = loopToggle
+    Instance.new("UICorner", loopToggle).CornerRadius = UDim.new(0, 8)
     
     -- ========== PÁGINA SPAWNPOINT ==========
     local spawnPage = Instance.new("Frame")
@@ -501,10 +478,7 @@ local function createMainUI()
     setSpawnBtn.TextSize = 14
     setSpawnBtn.BorderSizePixel = 0
     setSpawnBtn.Parent = spawnPage
-    
-    local spCorner = Instance.new("UICorner")
-    spCorner.CornerRadius = UDim.new(0, 10)
-    spCorner.Parent = setSpawnBtn
+    Instance.new("UICorner", setSpawnBtn).CornerRadius = UDim.new(0, 10)
     
     local clearSpawnBtn = Instance.new("TextButton")
     clearSpawnBtn.Size = UDim2.new(0.5, 0, 0, 35)
@@ -516,10 +490,7 @@ local function createMainUI()
     clearSpawnBtn.TextSize = 12
     clearSpawnBtn.BorderSizePixel = 0
     clearSpawnBtn.Parent = spawnPage
-    
-    local spCorner2 = Instance.new("UICorner")
-    spCorner2.CornerRadius = UDim.new(0, 8)
-    spCorner2.Parent = clearSpawnBtn
+    Instance.new("UICorner", clearSpawnBtn).CornerRadius = UDim.new(0, 8)
     
     -- Botões de Navegação
     local fastPunchBtn = createNavButton("⚡ Fast Punch", 10)
@@ -543,41 +514,21 @@ local function createMainUI()
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(
-                startPos.X.Scale, 
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale, 
-                startPos.Y.Offset + delta.Y
-            )
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     
-    -- Navegação entre páginas
+    -- Navegação
     local function switchPage(pageName)
-        for name, page in pairs(pages) do
-            page.Visible = (name == pageName)
-        end
-        
-        fastPunchBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        autoFarmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        teleportBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        spawnBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        
-        if pageName == "FastPunch" then
-            fastPunchBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        elseif pageName == "AutoFarm" then
-            autoFarmBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        elseif pageName == "Teleport" then
-            teleportBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        elseif pageName == "Spawn" then
-            spawnBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        end
+        for name, page in pairs(pages) do page.Visible = (name == pageName) end
+        fastPunchBtn.BackgroundColor3 = Color3.fromRGB(pageName == "FastPunch" and 60 or 40, 40, 40)
+        autoFarmBtn.BackgroundColor3 = Color3.fromRGB(pageName == "AutoFarm" and 60 or 40, 40, 40)
+        teleportBtn.BackgroundColor3 = Color3.fromRGB(pageName == "Teleport" and 60 or 40, 40, 40)
+        spawnBtn.BackgroundColor3 = Color3.fromRGB(pageName == "Spawn" and 60 or 40, 40, 40)
     end
     
     fastPunchBtn.MouseButton1Click:Connect(function() switchPage("FastPunch") end)
@@ -585,24 +536,16 @@ local function createMainUI()
     teleportBtn.MouseButton1Click:Connect(function() switchPage("Teleport") end)
     spawnBtn.MouseButton1Click:Connect(function() switchPage("Spawn") end)
     
-    -- Minimizar/Restaurar
-    local isMinimized = false
+    -- Minimizar
+    local minimized = false
     local originalSize = mainFrame.Size
-    
     minimizeButton.MouseButton1Click:Connect(function()
-        isMinimized = not isMinimized
-        
-        if isMinimized then
-            TweenService:Create(mainFrame, 
-                TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, 500, 0, 45)}
-            ):Play()
+        minimized = not minimized
+        if minimized then
+            TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 500, 0, 45)}):Play()
             minimizeButton.Text = "□"
         else
-            TweenService:Create(mainFrame, 
-                TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = originalSize}
-            ):Play()
+            TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = originalSize}):Play()
             minimizeButton.Text = "—"
         end
     end)
@@ -613,142 +556,71 @@ local function createMainUI()
         CONFIG.LOOP_TP_ENABLED = false
         CONFIG.AUTO_FARM_ENABLED = false
         CONFIG.FRZZ_ENABLED = false
-        TweenService:Create(mainFrame, 
-            TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-            {Size = UDim2.new(0, 0, 0, 0)}
-        ):Play()
-        task.wait(CONFIG.ANIMATION_SPEED)
+        CONFIG.AURA_ENABLED = false
+        CONFIG.ANTI_AFK_ENABLED = false
         screenGui:Destroy()
     end)
     
     return {
-        screenGui = screenGui,
-        mainFrame = mainFrame,
-        fpToggle = fpToggle,
-        staminaLabel = staminaLabel,
-        playerList = playerList,
-        notificationSystem = NotificationSystem.new(),
-        pages = pages,
-        teleportPage = teleportPage,
-        fastPunchPage = fastPunchPage,
-        autoFarmPage = autoFarmPage,
-        spawnPage = spawnPage,
-        loopToggle = loopToggle,
-        loopTargetLabel = loopTargetLabel,
-        setSpawnBtn = setSpawnBtn,
-        clearSpawnBtn = clearSpawnBtn,
-        spStatus = spStatus,
-        afToggle = afToggle,
-        afStatus = afStatus,
-        afTargetLabel = afTargetLabel,
-        targetList = targetList,
-        frzzToggle = frzzToggle,
+        screenGui = screenGui, mainFrame = mainFrame, fpToggle = fpToggle, staminaLabel = staminaLabel,
+        playerList = playerList, notificationSystem = NotificationSystem.new(), pages = pages,
+        teleportPage = teleportPage, fastPunchPage = fastPunchPage, autoFarmPage = autoFarmPage,
+        spawnPage = spawnPage, loopToggle = loopToggle, loopTargetLabel = loopTargetLabel,
+        setSpawnBtn = setSpawnBtn, clearSpawnBtn = clearSpawnBtn, spStatus = spStatus,
+        afToggle = afToggle, afStatus = afStatus, afTargetLabel = afTargetLabel,
+        targetList = targetList, frzzToggle = frzzToggle, auraToggle = auraToggle,
+        antiAfkToggle = antiAfkToggle,
     }
 end
 
--- ==================== SISTEMA FAST PUNCH (ORIGINAL) ====================
+-- ==================== FAST PUNCH ====================
 local function setupFastPunch(ui)
     local isRunning = false
-    
     local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
-    
-    if not PUNCH_EVENT then
-        PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch")
-    end
-    
-    if PUNCH_EVENT then
-        ui.notificationSystem:Show("✅ Fast Punch pronto!")
-    else
-        ui.notificationSystem:Show("⚠️ Evento de soco não encontrado!")
-    end
+    if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
     
     local PUNCH_ARGS = {0, 0.1, 1}
     
-    local function getStamina()
-        local character = LocalPlayer.Character
-        if not character then return 0 end
-        
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid then return 0 end
-        
-        local stamina = character:GetAttribute("Stamina") or character:GetAttribute("Energy")
-        if stamina then return stamina end
-        
-        stamina = character:FindFirstChild("Stamina")
-        if stamina and stamina:IsA("NumberValue") then
-            return stamina.Value
-        end
-        
-        return humanoid.Health
-    end
-    
     local function doPunch()
         if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then
-            pcall(function()
-                PUNCH_EVENT:FireServer(unpack(PUNCH_ARGS))
-            end)
+            pcall(function() PUNCH_EVENT:FireServer(unpack(PUNCH_ARGS)) end)
         end
     end
     
     local function fastPunchLoop()
         isRunning = true
         while CONFIG.FAST_PUNCH_ENABLED and isRunning do
-            local stamina = getStamina()
-            ui.staminaLabel.Text = "Stamina: " .. math.floor(stamina)
-            
-            if stamina < CONFIG.STAMINA_THRESHOLD then
-                ui.staminaLabel.TextColor3 = Color3.fromRGB(231, 76, 60)
-                task.wait(0.5)
-            else
-                ui.staminaLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-                doPunch()
-                task.wait(CONFIG.FAST_PUNCH_SPEED)
-            end
+            doPunch()
+            task.wait(CONFIG.FAST_PUNCH_SPEED)
         end
     end
     
     ui.fpToggle.MouseButton1Click:Connect(function()
         CONFIG.FAST_PUNCH_ENABLED = not CONFIG.FAST_PUNCH_ENABLED
-        
         if CONFIG.FAST_PUNCH_ENABLED then
             ui.fpToggle.Text = "ON"
             ui.fpToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-            ui.notificationSystem:Show("⚡ Fast Punch ATIVADO!")
-            
-            if not isRunning then
-                task.spawn(fastPunchLoop)
-            end
+            if not isRunning then task.spawn(fastPunchLoop) end
         else
             ui.fpToggle.Text = "OFF"
             ui.fpToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-            ui.notificationSystem:Show("⚡ Fast Punch DESATIVADO!")
             isRunning = false
-            ui.staminaLabel.Text = "Stamina: --"
-            ui.staminaLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
         end
     end)
 end
 
--- ==================== SISTEMA DE TELEPORTE ====================
+-- ==================== TELEPORTE ====================
 local function setupTeleportSystem(ui)
     local selectedPlayer = nil
     
-    local function teleportToPlayerSilent(player)
-        if not player then return false end
+    local function teleportToPlayer(player, silent)
+        if not player then return end
         local targetChar = player.Character
-        if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return false end
+        if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return end
         local myChar = LocalPlayer.Character
-        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
+        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
         myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5)
-        return true
-    end
-    
-    local function teleportToPlayer(player)
-        if teleportToPlayerSilent(player) then
-            ui.notificationSystem:Show("✅ Teleportado para " .. player.Name)
-        else
-            ui.notificationSystem:Show("❌ Falha ao teleportar!")
-        end
+        if not silent then ui.notificationSystem:Show("✅ Teleportado para " .. player.Name) end
     end
     
     local function updatePlayerList()
@@ -756,7 +628,6 @@ local function setupTeleportSystem(ui)
             for _, child in pairs(ui.playerList:GetChildren()) do
                 if child:IsA("TextButton") then child:Destroy() end
             end
-            
             local ySize = 0
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer then
@@ -771,7 +642,6 @@ local function setupTeleportSystem(ui)
                     btn.AutoButtonColor = false
                     btn.Parent = ui.playerList
                     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-                    
                     btn.MouseButton1Click:Connect(function()
                         selectedPlayer = player
                         ui.loopTargetLabel.Text = "Alvo: " .. player.Name
@@ -779,9 +649,8 @@ local function setupTeleportSystem(ui)
                             if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end
                         end
                         btn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-                        teleportToPlayer(player)
+                        teleportToPlayer(player, false)
                     end)
-                    
                     ySize = ySize + 38
                 end
             end
@@ -792,19 +661,13 @@ local function setupTeleportSystem(ui)
     ui.loopToggle.MouseButton1Click:Connect(function()
         CONFIG.LOOP_TP_ENABLED = not CONFIG.LOOP_TP_ENABLED
         if CONFIG.LOOP_TP_ENABLED then
-            if not selectedPlayer then
-                ui.notificationSystem:Show("❌ Selecione um jogador primeiro!")
-                CONFIG.LOOP_TP_ENABLED = false
-                return
-            end
+            if not selectedPlayer then ui.notificationSystem:Show("❌ Selecione um jogador primeiro!") CONFIG.LOOP_TP_ENABLED = false return end
             ui.loopToggle.Text = "PARAR LOOP"
             ui.loopToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
             CONFIG.LOOP_TP_TARGET = selectedPlayer
-            ui.notificationSystem:Show("🔄 Loop TP iniciado em " .. selectedPlayer.Name)
-            
             task.spawn(function()
                 while CONFIG.LOOP_TP_ENABLED and CONFIG.LOOP_TP_TARGET do
-                    teleportToPlayerSilent(CONFIG.LOOP_TP_TARGET)
+                    teleportToPlayer(CONFIG.LOOP_TP_TARGET, true)
                     task.wait(CONFIG.LOOP_TP_INTERVAL)
                 end
             end)
@@ -812,42 +675,28 @@ local function setupTeleportSystem(ui)
             ui.loopToggle.Text = "INICIAR LOOP"
             ui.loopToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             CONFIG.LOOP_TP_TARGET = nil
-            ui.notificationSystem:Show("🔄 Loop TP DESATIVADO")
         end
     end)
     
-    ui.teleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
-        if ui.teleportPage.Visible then updatePlayerList() end
-    end)
-    
+    ui.teleportPage:GetPropertyChangedSignal("Visible"):Connect(function() if ui.teleportPage.Visible then updatePlayerList() end end)
     Players.PlayerAdded:Connect(function() task.wait(0.2) updatePlayerList() end)
     Players.PlayerRemoving:Connect(function(p)
         task.wait(0.2) updatePlayerList()
-        if selectedPlayer == p then
-            selectedPlayer = nil
-            ui.loopTargetLabel.Text = "Alvo: Nenhum"
-            if CONFIG.LOOP_TP_ENABLED then
-                CONFIG.LOOP_TP_ENABLED = false
-                ui.loopToggle.Text = "INICIAR LOOP"
-                ui.loopToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-            end
+        if selectedPlayer == p then selectedPlayer = nil ui.loopTargetLabel.Text = "Alvo: Nenhum"
+            if CONFIG.LOOP_TP_ENABLED then CONFIG.LOOP_TP_ENABLED = false ui.loopToggle.Text = "INICIAR LOOP" ui.loopToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113) end
         end
     end)
-    
     updatePlayerList()
 end
 
--- ==================== AUTO FARM KILL (AUTOMÁTICO) + FRZZ ====================
+-- ==================== AUTO FARM + RESET + AURA + FRZZ + ANTI AFK ====================
 local function setupAutoFarm(ui)
     local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
     if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
-    
     local selectedTarget = nil
     
     local function doPunch()
-        if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then
-            pcall(function() PUNCH_EVENT:FireServer(0, 0.1, 1) end)
-        end
+        if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then pcall(function() PUNCH_EVENT:FireServer(0, 0.1, 1) end) end
     end
     
     local function isPlayerAlive(player)
@@ -859,79 +708,68 @@ local function setupAutoFarm(ui)
         return humanoid.Health > 0
     end
     
-    -- Botão INICIAR/PARAR
+    local function teleportToTarget()
+        if not selectedTarget then return end
+        local targetChar = selectedTarget.Character
+        if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return end
+        local myChar = LocalPlayer.Character
+        if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
+        myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5)
+    end
+    
+    local function resetCharacter()
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.Health = 0
+        end
+    end
+    
+    -- INICIAR Auto Farm
     ui.afToggle.MouseButton1Click:Connect(function()
         CONFIG.AUTO_FARM_ENABLED = not CONFIG.AUTO_FARM_ENABLED
-        
         if CONFIG.AUTO_FARM_ENABLED then
-            if not selectedTarget then
-                ui.notificationSystem:Show("❌ Selecione um jogador na lista abaixo!")
-                CONFIG.AUTO_FARM_ENABLED = false
-                return
-            end
-            
-            ui.afToggle.Text = "PARAR FARM"
+            if not selectedTarget then ui.notificationSystem:Show("❌ Selecione um jogador!") CONFIG.AUTO_FARM_ENABLED = false return end
+            ui.afToggle.Text = "PARAR"
             ui.afToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
             ui.afStatus.Text = "Status: Iniciando..."
             ui.afStatus.TextColor3 = Color3.fromRGB(46, 204, 113)
-            ui.notificationSystem:Show("🤖 Auto Farm ATIVADO! Alvo: " .. selectedTarget.Name)
             
             task.spawn(function()
                 while CONFIG.AUTO_FARM_ENABLED do
-                    -- Verifica se o alvo está vivo
                     if isPlayerAlive(selectedTarget) then
-                        -- Teleporta para o alvo
-                        pcall(function()
-                            local targetChar = selectedTarget.Character
-                            local myChar = LocalPlayer.Character
-                            if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and 
-                               myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                                myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5)
-                            end
-                        end)
-                        
-                        -- Bate até matar
+                        teleportToTarget()
                         ui.afStatus.Text = "Status: Matando " .. selectedTarget.Name
                         while CONFIG.AUTO_FARM_ENABLED and isPlayerAlive(selectedTarget) do
                             doPunch()
                             task.wait(0.05)
                         end
-                        
                         if not CONFIG.AUTO_FARM_ENABLED then break end
                         
-                        -- Matou! Agora espera renascer
-                        ui.afStatus.Text = "Status: Aguardando " .. selectedTarget.Name .. " renascer..."
-                        ui.notificationSystem:Show("💀 " .. selectedTarget.Name .. " morreu! Aguardando renascer...")
+                        -- RESET após matar
+                        ui.afStatus.Text = "Status: Resetando..."
+                        ui.notificationSystem:Show("💀 " .. selectedTarget.Name .. " morreu! Resetando...")
+                        resetCharacter()
+                        task.wait(0.5)
                         
-                        -- Espera o player renascer (não está vivo)
-                        while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do
-                            task.wait(0.5)
-                        end
-                        
+                        -- Espera renascer
+                        ui.afStatus.Text = "Status: Aguardando renascer..."
+                        while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do task.wait(0.5) end
                         if not CONFIG.AUTO_FARM_ENABLED then break end
                         
-                        -- Player renasceu! Espera 5 segundos pro escudo sair
-                        ui.afStatus.Text = "Status: Escudo saindo... 5s"
-                        ui.notificationSystem:Show("🛡️ " .. selectedTarget.Name .. " renasceu! Esperando escudo sumir (5s)...")
-                        
+                        -- Espera escudo
+                        ui.afStatus.Text = "Status: Aguardando escudo..."
                         for i = CONFIG.SHIELD_WAIT, 1, -1 do
                             if not CONFIG.AUTO_FARM_ENABLED then break end
-                            ui.afStatus.Text = "Status: Aguardando escudo... " .. i .. "s"
+                            ui.afStatus.Text = "Status: Escudo " .. i .. "s..."
                             task.wait(1)
                         end
                     else
-                        -- Alvo não está vivo, espera renascer
-                        ui.afStatus.Text = "Status: Aguardando " .. selectedTarget.Name .. " renascer..."
-                        while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do
-                            task.wait(1)
-                        end
-                        
-                        if CONFIG.AUTO_FARM_ENABLED and isPlayerAlive(selectedTarget) then
-                            -- Espera o escudo
-                            ui.afStatus.Text = "Status: Escudo saindo... 5s"
+                        ui.afStatus.Text = "Status: Aguardando renascer..."
+                        while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do task.wait(1) end
+                        if CONFIG.AUTO_FARM_ENABLED then
                             for i = CONFIG.SHIELD_WAIT, 1, -1 do
                                 if not CONFIG.AUTO_FARM_ENABLED then break end
-                                ui.afStatus.Text = "Status: Aguardando escudo... " .. i .. "s"
+                                ui.afStatus.Text = "Status: Escudo " .. i .. "s..."
                                 task.wait(1)
                             end
                         end
@@ -939,30 +777,22 @@ local function setupAutoFarm(ui)
                 end
             end)
         else
-            ui.afToggle.Text = "INICIAR FARM"
+            ui.afToggle.Text = "INICIAR"
             ui.afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             ui.afStatus.Text = "Status: Parado"
             ui.afStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
-            ui.notificationSystem:Show("🤖 Auto Farm DESATIVADO!")
         end
     end)
     
-    -- Botão FRZZ (Freeze)
+    -- FRZZ
     local freezeConnection = nil
-    
     ui.frzzToggle.MouseButton1Click:Connect(function()
         CONFIG.FRZZ_ENABLED = not CONFIG.FRZZ_ENABLED
-        
         if CONFIG.FRZZ_ENABLED then
             ui.frzzToggle.Text = "FRZZ: ON"
             ui.frzzToggle.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-            ui.notificationSystem:Show("🧊 Freeze ATIVADO!")
-            
             local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                CONFIG.frozenCFrame = char.HumanoidRootPart.CFrame
-            end
-            
+            if char and char:FindFirstChild("HumanoidRootPart") then CONFIG.frozenCFrame = char.HumanoidRootPart.CFrame end
             freezeConnection = RunService.Heartbeat:Connect(function()
                 if not CONFIG.FRZZ_ENABLED then return end
                 local char = LocalPlayer.Character
@@ -975,23 +805,87 @@ local function setupAutoFarm(ui)
         else
             ui.frzzToggle.Text = "FRZZ: OFF"
             ui.frzzToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-            ui.notificationSystem:Show("🧊 Freeze DESATIVADO!")
             CONFIG.frozenCFrame = nil
-            
-            if freezeConnection then
-                freezeConnection:Disconnect()
-                freezeConnection = nil
-            end
+            if freezeConnection then freezeConnection:Disconnect() freezeConnection = nil end
         end
     end)
     
-    -- Atualizar lista de alvos
+    -- AURA DE DANO
+    ui.auraToggle.MouseButton1Click:Connect(function()
+        CONFIG.AURA_ENABLED = not CONFIG.AURA_ENABLED
+        if CONFIG.AURA_ENABLED then
+            ui.auraToggle.Text = "AURA: ON"
+            ui.auraToggle.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
+            ui.notificationSystem:Show("💥 Aura de Dano ATIVADA! (a cada " .. CONFIG.AURA_INTERVAL .. "s)")
+            
+            task.spawn(function()
+                while CONFIG.AURA_ENABLED do
+                    local myChar = LocalPlayer.Character
+                    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                        for _, player in ipairs(Players:GetPlayers()) do
+                            if player ~= LocalPlayer and isPlayerAlive(player) then
+                                local targetChar = player.Character
+                                if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+                                    local dist = (myChar.HumanoidRootPart.Position - targetChar.HumanoidRootPart.Position).Magnitude
+                                    if dist <= 50 then
+                                        targetChar.HumanoidRootPart.CFrame = myChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                                        doPunch()
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(CONFIG.AURA_INTERVAL)
+                end
+            end)
+        else
+            ui.auraToggle.Text = "AURA: OFF"
+            ui.auraToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        end
+    end)
+    
+    -- ANTI AFK
+    ui.antiAfkToggle.MouseButton1Click:Connect(function()
+        CONFIG.ANTI_AFK_ENABLED = not CONFIG.ANTI_AFK_ENABLED
+        if CONFIG.ANTI_AFK_ENABLED then
+            ui.antiAfkToggle.Text = "🛡️ ANTI AFK: ON (Pula a cada 3min)"
+            ui.antiAfkToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+            ui.notificationSystem:Show("🛡️ Anti AFK ATIVADO! (Pulo a cada 3min)")
+            
+            task.spawn(function()
+                while CONFIG.ANTI_AFK_ENABLED do
+                    task.wait(CONFIG.ANTI_AFK_INTERVAL)
+                    if CONFIG.ANTI_AFK_ENABLED then
+                        -- Simula pulo
+                        pcall(function()
+                            local char = LocalPlayer.Character
+                            if char and char:FindFirstChild("Humanoid") then
+                                char.Humanoid.Jump = true
+                            end
+                        end)
+                        -- Move um pouco pra frente e volta
+                        pcall(function()
+                            local char = LocalPlayer.Character
+                            if char and char:FindFirstChild("Humanoid") then
+                                char.Humanoid:Move(Vector3.new(1, 0, 0), false)
+                                task.wait(0.1)
+                                char.Humanoid:Move(Vector3.new(-1, 0, 0), false)
+                            end
+                        end)
+                    end
+                end
+            end)
+        else
+            ui.antiAfkToggle.Text = "🛡️ ANTI AFK: OFF (Pula a cada 3min)"
+            ui.antiAfkToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            ui.notificationSystem:Show("🛡️ Anti AFK DESATIVADO!")
+        end
+    end)
+    
+    -- Lista de alvos
     local function updateTargetList()
         pcall(function()
-            for _, child in pairs(ui.targetList:GetChildren()) do
-                if child:IsA("TextButton") then child:Destroy() end
-            end
-            
+            for _, child in pairs(ui.targetList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
             local ySize = 0
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer then
@@ -1006,17 +900,12 @@ local function setupAutoFarm(ui)
                     btn.AutoButtonColor = false
                     btn.Parent = ui.targetList
                     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-                    
                     btn.MouseButton1Click:Connect(function()
                         selectedTarget = player
                         ui.afTargetLabel.Text = "Alvo: " .. player.Name
-                        for _, c in pairs(ui.targetList:GetChildren()) do
-                            if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end
-                        end
+                        for _, c in pairs(ui.targetList:GetChildren()) do if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end end
                         btn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-                        ui.notificationSystem:Show("🎯 Alvo selecionado: " .. player.Name)
                     end)
-                    
                     ySize = ySize + 27
                 end
             end
@@ -1024,74 +913,42 @@ local function setupAutoFarm(ui)
         end)
     end
     
-    ui.autoFarmPage:GetPropertyChangedSignal("Visible"):Connect(function()
-        if ui.autoFarmPage.Visible then updateTargetList() end
-    end)
-    
+    ui.autoFarmPage:GetPropertyChangedSignal("Visible"):Connect(function() if ui.autoFarmPage.Visible then updateTargetList() end end)
     Players.PlayerAdded:Connect(function() task.wait(0.2) updateTargetList() end)
     Players.PlayerRemoving:Connect(function(p)
         task.wait(0.2) updateTargetList()
-        if selectedTarget == p then
-            selectedTarget = nil
-            ui.afTargetLabel.Text = "Alvo: Nenhum"
-            if CONFIG.AUTO_FARM_ENABLED then
-                CONFIG.AUTO_FARM_ENABLED = false
-                ui.afToggle.Text = "INICIAR FARM"
-                ui.afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-            end
+        if selectedTarget == p then selectedTarget = nil ui.afTargetLabel.Text = "Alvo: Nenhum"
+            if CONFIG.AUTO_FARM_ENABLED then CONFIG.AUTO_FARM_ENABLED = false ui.afToggle.Text = "INICIAR" ui.afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113) end
         end
     end)
-    
     updateTargetList()
 end
 
 -- ==================== SPAWNPOINT ====================
 local function setupSpawnpoint(ui)
     local spawnConnection
-
     local function updateConnection()
-        if spawnConnection then
-            spawnConnection:Disconnect()
-            spawnConnection = nil
-        end
-        
+        if spawnConnection then spawnConnection:Disconnect() spawnConnection = nil end
         spawnConnection = LocalPlayer.CharacterAdded:Connect(function(char)
             if not CONFIG.SPAWNPOINT then return end
-            
             task.wait(0.2)
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if not hrp then
-                hrp = char:WaitForChild("HumanoidRootPart", 5)
-            end
-            
-            if hrp and CONFIG.SPAWNPOINT then
-                hrp.CFrame = CONFIG.SPAWNPOINT
-                ui.notificationSystem:Show("📍 Respawnado no ponto definido!")
-            end
+            local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 5)
+            if hrp and CONFIG.SPAWNPOINT then hrp.CFrame = CONFIG.SPAWNPOINT end
         end)
     end
-    
     updateConnection()
-    
     ui.setSpawnBtn.MouseButton1Click:Connect(function()
         local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then
-            ui.notificationSystem:Show("❌ Você precisa estar no jogo!")
-            return
-        end
-        
+        if not char or not char:FindFirstChild("HumanoidRootPart") then ui.notificationSystem:Show("❌ Você precisa estar no jogo!") return end
         CONFIG.SPAWNPOINT = char.HumanoidRootPart.CFrame
         ui.spStatus.Text = "Spawnpoint: ✅ Definido!"
         ui.spStatus.TextColor3 = Color3.fromRGB(46, 204, 113)
-        ui.notificationSystem:Show("📍 Novo spawnpoint definido!")
         updateConnection()
     end)
-    
     ui.clearSpawnBtn.MouseButton1Click:Connect(function()
         CONFIG.SPAWNPOINT = nil
         ui.spStatus.Text = "Spawnpoint: Não definido"
         ui.spStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
-        ui.notificationSystem:Show("🗑️ Spawnpoint removido!")
         updateConnection()
     end)
 end
@@ -1107,5 +964,4 @@ local function initialize()
         ui.notificationSystem:Show("🚀 Age of Heroes Premium carregado!")
     end)
 end
-
 initialize()
