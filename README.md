@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 1.0.4
-    Fast Punch original + Teleport + Loop TP + Spawnpoint
+    Versão: 1.0.9
+    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill
 ]]
 
 -- Serviços
@@ -25,6 +25,8 @@ local CONFIG = {
     LOOP_TP_TARGET = nil,
     LOOP_TP_INTERVAL = 0.1,
     SPAWNPOINT = nil,
+    AUTO_FARM_ENABLED = false,
+    AUTO_FARM_INTERVAL = 15, -- Tempo de espera após matar
 }
 
 -- ==================== NOTIFICAÇÕES ====================
@@ -184,13 +186,13 @@ local function createMainUI()
     -- Botões de Navegação
     local function createNavButton(text, position)
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -20, 0, 35)
+        button.Size = UDim2.new(1, -20, 0, 30)
         button.Position = UDim2.new(0, 10, 0, position)
         button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         button.Text = text
         button.TextColor3 = Color3.fromRGB(200, 200, 200)
         button.Font = Enum.Font.GothamMedium
-        button.TextSize = 13
+        button.TextSize = 11
         button.BorderSizePixel = 0
         button.Parent = navBar
         
@@ -204,7 +206,7 @@ local function createMainUI()
     -- Páginas
     local pages = {}
     
-    -- ========== PÁGINA FAST PUNCH (ORIGINAL - NÃO MEXA) ==========
+    -- ========== PÁGINA FAST PUNCH (ORIGINAL) ==========
     local fastPunchPage = Instance.new("Frame")
     fastPunchPage.Name = "FastPunchPage"
     fastPunchPage.Size = UDim2.new(1, 0, 1, 0)
@@ -262,6 +264,101 @@ local function createMainUI()
     staminaLabel.TextSize = 14
     staminaLabel.TextXAlignment = Enum.TextXAlignment.Center
     staminaLabel.Parent = fastPunchPage
+    
+    -- ========== PÁGINA AUTO FARM KILL ==========
+    local autoFarmPage = Instance.new("Frame")
+    autoFarmPage.Size = UDim2.new(1, 0, 1, 0)
+    autoFarmPage.BackgroundTransparency = 1
+    autoFarmPage.Visible = false
+    autoFarmPage.Parent = mainContent
+    pages["AutoFarm"] = autoFarmPage
+    
+    local afTitle = Instance.new("TextLabel")
+    afTitle.Size = UDim2.new(1, 0, 0, 25)
+    afTitle.Position = UDim2.new(0, 0, 0, 5)
+    afTitle.BackgroundTransparency = 1
+    afTitle.Text = "🤖 Auto Farm Kill"
+    afTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    afTitle.Font = Enum.Font.GothamBold
+    afTitle.TextSize = 16
+    afTitle.TextXAlignment = Enum.TextXAlignment.Center
+    afTitle.Parent = autoFarmPage
+    
+    local afDesc = Instance.new("TextLabel")
+    afDesc.Size = UDim2.new(1, -20, 0, 35)
+    afDesc.Position = UDim2.new(0, 10, 0, 35)
+    afDesc.BackgroundTransparency = 1
+    afDesc.Text = "Bate até MATAR o player, depois espera o cooldown"
+    afDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
+    afDesc.Font = Enum.Font.GothamMedium
+    afDesc.TextSize = 10
+    afDesc.TextWrapped = true
+    afDesc.TextXAlignment = Enum.TextXAlignment.Center
+    afDesc.Parent = autoFarmPage
+    
+    -- Label "Cooldown após kill (segundos):"
+    local cdTitle = Instance.new("TextLabel")
+    cdTitle.Size = UDim2.new(1, -20, 0, 18)
+    cdTitle.Position = UDim2.new(0, 10, 0, 80)
+    cdTitle.BackgroundTransparency = 1
+    cdTitle.Text = "Cooldown após kill (segundos):"
+    cdTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+    cdTitle.Font = Enum.Font.GothamMedium
+    cdTitle.TextSize = 11
+    cdTitle.TextXAlignment = Enum.TextXAlignment.Center
+    cdTitle.Parent = autoFarmPage
+    
+    -- Caixa de texto: cooldown
+    local cooldownBox = Instance.new("TextBox")
+    cooldownBox.Size = UDim2.new(0.35, 0, 0, 28)
+    cooldownBox.Position = UDim2.new(0.325, 0, 0, 102)
+    cooldownBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    cooldownBox.Text = tostring(CONFIG.AUTO_FARM_INTERVAL)
+    cooldownBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    cooldownBox.Font = Enum.Font.GothamBold
+    cooldownBox.TextSize = 15
+    cooldownBox.BorderSizePixel = 0
+    cooldownBox.PlaceholderText = "Segundos"
+    cooldownBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+    cooldownBox.Parent = autoFarmPage
+    Instance.new("UICorner", cooldownBox).CornerRadius = UDim.new(0, 8)
+    
+    -- Status
+    local afStatus = Instance.new("TextLabel")
+    afStatus.Size = UDim2.new(1, -20, 0, 20)
+    afStatus.Position = UDim2.new(0, 10, 0, 150)
+    afStatus.BackgroundTransparency = 1
+    afStatus.Text = "Status: Parado"
+    afStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+    afStatus.Font = Enum.Font.GothamMedium
+    afStatus.TextSize = 12
+    afStatus.TextXAlignment = Enum.TextXAlignment.Center
+    afStatus.Parent = autoFarmPage
+    
+    -- Label "Alvo atual:"
+    local afTargetLabel = Instance.new("TextLabel")
+    afTargetLabel.Size = UDim2.new(1, -20, 0, 18)
+    afTargetLabel.Position = UDim2.new(0, 10, 0, 175)
+    afTargetLabel.BackgroundTransparency = 1
+    afTargetLabel.Text = "Alvo: Nenhum"
+    afTargetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    afTargetLabel.Font = Enum.Font.GothamMedium
+    afTargetLabel.TextSize = 11
+    afTargetLabel.TextXAlignment = Enum.TextXAlignment.Center
+    afTargetLabel.Parent = autoFarmPage
+    
+    -- Botão ON/OFF
+    local afToggle = Instance.new("TextButton")
+    afToggle.Size = UDim2.new(0.5, 0, 0, 45)
+    afToggle.Position = UDim2.new(0.25, 0, 0, 210)
+    afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+    afToggle.Text = "INICIAR FARM"
+    afToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    afToggle.Font = Enum.Font.GothamBold
+    afToggle.TextSize = 14
+    afToggle.BorderSizePixel = 0
+    afToggle.Parent = autoFarmPage
+    Instance.new("UICorner", afToggle).CornerRadius = UDim.new(0, 10)
     
     -- ========== PÁGINA TELEPORT ==========
     local teleportPage = Instance.new("Frame")
@@ -412,9 +509,10 @@ local function createMainUI()
     spCorner2.Parent = clearSpawnBtn
     
     -- Botões de Navegação
-    local fastPunchBtn = createNavButton("⚡ Fast Punch", 15)
-    local teleportBtn = createNavButton("🌍 Teleport", 55)
-    local spawnBtn = createNavButton("📍 Spawnpoint", 95)
+    local fastPunchBtn = createNavButton("⚡ Fast Punch", 10)
+    local autoFarmBtn = createNavButton("🤖 Auto Farm", 45)
+    local teleportBtn = createNavButton("🌍 Teleport", 80)
+    local spawnBtn = createNavButton("📍 Spawnpoint", 115)
     
     -- Sistema de arrastar
     local dragging = false
@@ -454,11 +552,14 @@ local function createMainUI()
         end
         
         fastPunchBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        autoFarmBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         teleportBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         spawnBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         
         if pageName == "FastPunch" then
             fastPunchBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        elseif pageName == "AutoFarm" then
+            autoFarmBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
         elseif pageName == "Teleport" then
             teleportBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
         elseif pageName == "Spawn" then
@@ -467,6 +568,7 @@ local function createMainUI()
     end
     
     fastPunchBtn.MouseButton1Click:Connect(function() switchPage("FastPunch") end)
+    autoFarmBtn.MouseButton1Click:Connect(function() switchPage("AutoFarm") end)
     teleportBtn.MouseButton1Click:Connect(function() switchPage("Teleport") end)
     spawnBtn.MouseButton1Click:Connect(function() switchPage("Spawn") end)
     
@@ -496,6 +598,7 @@ local function createMainUI()
     closeButton.MouseButton1Click:Connect(function()
         CONFIG.FAST_PUNCH_ENABLED = false
         CONFIG.LOOP_TP_ENABLED = false
+        CONFIG.AUTO_FARM_ENABLED = false
         TweenService:Create(mainFrame, 
             TweenInfo.new(CONFIG.ANIMATION_SPEED, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
             {Size = UDim2.new(0, 0, 0, 0)}
@@ -514,16 +617,21 @@ local function createMainUI()
         pages = pages,
         teleportPage = teleportPage,
         fastPunchPage = fastPunchPage,
+        autoFarmPage = autoFarmPage,
         spawnPage = spawnPage,
         loopToggle = loopToggle,
         loopTargetLabel = loopTargetLabel,
         setSpawnBtn = setSpawnBtn,
         clearSpawnBtn = clearSpawnBtn,
         spStatus = spStatus,
+        afToggle = afToggle,
+        afStatus = afStatus,
+        afTargetLabel = afTargetLabel,
+        cooldownBox = cooldownBox,
     }
 end
 
--- ==================== SISTEMA FAST PUNCH (ORIGINAL - NÃO MEXI) ====================
+-- ==================== SISTEMA FAST PUNCH (ORIGINAL) ====================
 local function setupFastPunch(ui)
     local isRunning = false
     
@@ -604,13 +712,10 @@ local function setupFastPunch(ui)
             ui.staminaLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
         end
     end)
-end
-
--- ==================== SISTEMA DE TELEPORTE (CORRIGIDO) ====================
+end-- ==================== SISTEMA DE TELEPORTE ====================
 local function setupTeleportSystem(ui)
     local selectedPlayer = nil
     
-    -- Teleporte sem notificação (usado pelo loop)
     local function teleportToPlayerSilent(player)
         if not player then return false end
         local targetChar = player.Character
@@ -621,7 +726,6 @@ local function setupTeleportSystem(ui)
         return true
     end
     
-    -- Teleporte com notificação (usado no clique único)
     local function teleportToPlayer(player)
         if teleportToPlayerSilent(player) then
             ui.notificationSystem:Show("✅ Teleportado para " .. player.Name)
@@ -658,7 +762,7 @@ local function setupTeleportSystem(ui)
                             if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end
                         end
                         btn.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-                        teleportToPlayer(player) -- Com notificação
+                        teleportToPlayer(player)
                     end)
                     
                     ySize = ySize + 38
@@ -668,7 +772,6 @@ local function setupTeleportSystem(ui)
         end)
     end
     
-    -- Loop TP (sem spam de notificação)
     ui.loopToggle.MouseButton1Click:Connect(function()
         CONFIG.LOOP_TP_ENABLED = not CONFIG.LOOP_TP_ENABLED
         if CONFIG.LOOP_TP_ENABLED then
@@ -680,11 +783,11 @@ local function setupTeleportSystem(ui)
             ui.loopToggle.Text = "PARAR LOOP"
             ui.loopToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
             CONFIG.LOOP_TP_TARGET = selectedPlayer
-            ui.notificationSystem:Show("🔄 Loop TP iniciado em " .. selectedPlayer.Name) -- Só uma vez
+            ui.notificationSystem:Show("🔄 Loop TP iniciado em " .. selectedPlayer.Name)
             
             task.spawn(function()
                 while CONFIG.LOOP_TP_ENABLED and CONFIG.LOOP_TP_TARGET do
-                    teleportToPlayerSilent(CONFIG.LOOP_TP_TARGET) -- Sem notificação
+                    teleportToPlayerSilent(CONFIG.LOOP_TP_TARGET)
                     task.wait(CONFIG.LOOP_TP_INTERVAL)
                 end
             end)
@@ -692,7 +795,7 @@ local function setupTeleportSystem(ui)
             ui.loopToggle.Text = "INICIAR LOOP"
             ui.loopToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             CONFIG.LOOP_TP_TARGET = nil
-            ui.notificationSystem:Show("🔄 Loop TP DESATIVADO") -- Só uma vez
+            ui.notificationSystem:Show("🔄 Loop TP DESATIVADO")
         end
     end)
     
@@ -717,18 +820,162 @@ local function setupTeleportSystem(ui)
     updatePlayerList()
 end
 
+-- ==================== AUTO FARM KILL ====================
+local function setupAutoFarm(ui)
+    local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
+    if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
+    
+    local function doPunch()
+        if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then
+            pcall(function() PUNCH_EVENT:FireServer(0, 0.1, 1) end)
+        end
+    end
+    
+    -- Verifica se o player alvo está vivo
+    local function isPlayerAlive(player)
+        if not player then return false end
+        local char = player.Character
+        if not char then return false end
+        local humanoid = char:FindFirstChild("Humanoid")
+        if not humanoid then return false end
+        return humanoid.Health > 0
+    end
+    
+    -- Pega um player vivo aleatório (que não seja você)
+    local function getRandomAlivePlayer()
+        local alivePlayers = {}
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and isPlayerAlive(player) then
+                table.insert(alivePlayers, player)
+            end
+        end
+        if #alivePlayers > 0 then
+            return alivePlayers[math.random(1, #alivePlayers)]
+        end
+        return nil
+    end
+    
+    -- CooldownBox atualiza ao perder foco
+    ui.cooldownBox.FocusLost:Connect(function()
+        local num = tonumber(ui.cooldownBox.Text)
+        if num and num >= 1 then
+            CONFIG.AUTO_FARM_INTERVAL = num
+        else
+            ui.cooldownBox.Text = tostring(CONFIG.AUTO_FARM_INTERVAL)
+        end
+    end)
+    
+    -- Botão ON/OFF
+    ui.afToggle.MouseButton1Click:Connect(function()
+        CONFIG.AUTO_FARM_ENABLED = not CONFIG.AUTO_FARM_ENABLED
+        
+        if CONFIG.AUTO_FARM_ENABLED then
+            local cd = tonumber(ui.cooldownBox.Text)
+            if cd and cd >= 1 then CONFIG.AUTO_FARM_INTERVAL = cd end
+            ui.cooldownBox.Text = tostring(CONFIG.AUTO_FARM_INTERVAL)
+            
+            ui.afToggle.Text = "PARAR FARM"
+            ui.afToggle.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+            ui.afStatus.Text = "Status: Procurando alvo..."
+            ui.afStatus.TextColor3 = Color3.fromRGB(46, 204, 113)
+            ui.notificationSystem:Show("🤖 Auto Farm Kill ATIVADO! Cooldown: " .. CONFIG.AUTO_FARM_INTERVAL .. "s")
+            
+            task.spawn(function()
+                while CONFIG.AUTO_FARM_ENABLED do
+                    -- Procura um alvo vivo
+                    local target = getRandomAlivePlayer()
+                    
+                    if not target then
+                        ui.afStatus.Text = "Status: Nenhum alvo vivo, aguardando..."
+                        ui.afTargetLabel.Text = "Alvo: Nenhum"
+                        task.wait(1)
+                        continue
+                    end
+                    
+                    ui.afTargetLabel.Text = "Alvo: " .. target.Name
+                    ui.afStatus.Text = "Status: Matando " .. target.Name
+                    ui.notificationSystem:Show("🎯 Alvo: " .. target.Name)
+                    
+                    -- Teleporta para o alvo
+                    pcall(function()
+                        local targetChar = target.Character
+                        local myChar = LocalPlayer.Character
+                        if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and 
+                           myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                            myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5)
+                        end
+                    end)
+                    
+                    -- Bate até matar
+                    while CONFIG.AUTO_FARM_ENABLED and isPlayerAlive(target) do
+                        doPunch()
+                        task.wait(0.05)
+                    end
+                    
+                    if not CONFIG.AUTO_FARM_ENABLED then break end
+                    
+                    -- Alvo morreu, espera cooldown
+                    ui.afStatus.Text = "Status: " .. target.Name .. " morreu! Cooldown..."
+                    ui.notificationSystem:Show("💀 " .. target.Name .. " morreu! Aguardando " .. CONFIG.AUTO_FARM_INTERVAL .. "s")
+                    
+                    for i = CONFIG.AUTO_FARM_INTERVAL, 1, -1 do
+                        if not CONFIG.AUTO_FARM_ENABLED then break end
+                        ui.afStatus.Text = "Status: Cooldown " .. i .. "s..."
+                        task.wait(1)
+                    end
+                end
+            end)
+        else
+            ui.afToggle.Text = "INICIAR FARM"
+            ui.afToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+            ui.afStatus.Text = "Status: Parado"
+            ui.afStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+            ui.afTargetLabel.Text = "Alvo: Nenhum"
+            ui.notificationSystem:Show("🤖 Auto Farm DESATIVADO!")
+        end
+    end)
+end
+
 -- ==================== SPAWNPOINT ====================
 local function setupSpawnpoint(ui)
+    local spawnConnection
+
+    local function updateConnection()
+        if spawnConnection then
+            spawnConnection:Disconnect()
+            spawnConnection = nil
+        end
+        
+        spawnConnection = LocalPlayer.CharacterAdded:Connect(function(char)
+            if not CONFIG.SPAWNPOINT then return end
+            
+            task.wait(0.2)
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then
+                hrp = char:WaitForChild("HumanoidRootPart", 5)
+            end
+            
+            if hrp and CONFIG.SPAWNPOINT then
+                hrp.CFrame = CONFIG.SPAWNPOINT
+                ui.notificationSystem:Show("📍 Respawnado no ponto definido!")
+            end
+        end)
+    end
+    
+    updateConnection()
+    
     ui.setSpawnBtn.MouseButton1Click:Connect(function()
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") then
             ui.notificationSystem:Show("❌ Você precisa estar no jogo!")
             return
         end
+        
         CONFIG.SPAWNPOINT = char.HumanoidRootPart.CFrame
         ui.spStatus.Text = "Spawnpoint: ✅ Definido!"
         ui.spStatus.TextColor3 = Color3.fromRGB(46, 204, 113)
-        ui.notificationSystem:Show("📍 Spawnpoint definido!")
+        ui.notificationSystem:Show("📍 Novo spawnpoint definido!")
+        updateConnection()
     end)
     
     ui.clearSpawnBtn.MouseButton1Click:Connect(function()
@@ -736,16 +983,7 @@ local function setupSpawnpoint(ui)
         ui.spStatus.Text = "Spawnpoint: Não definido"
         ui.spStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
         ui.notificationSystem:Show("🗑️ Spawnpoint removido!")
-    end)
-    
-    LocalPlayer.CharacterAdded:Connect(function(char)
-        if CONFIG.SPAWNPOINT then
-            task.wait(0.1)
-            pcall(function()
-                local hrp = char:WaitForChild("HumanoidRootPart", 5)
-                if hrp then hrp.CFrame = CONFIG.SPAWNPOINT end
-            end)
-        end
+        updateConnection()
     end)
 end
 
@@ -754,6 +992,7 @@ local function initialize()
     pcall(function()
         local ui = createMainUI()
         setupFastPunch(ui)
+        setupAutoFarm(ui)
         setupTeleportSystem(ui)
         setupSpawnpoint(ui)
         ui.notificationSystem:Show("🚀 Age of Heroes Premium carregado!")
