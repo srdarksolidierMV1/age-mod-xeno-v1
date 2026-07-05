@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 2.3.1
-    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill com Reset + Aura de Dano + FRZZ + Anti AFK
+    Versão: 2.3.2
+    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill com Reset + Aura de Dano (Cooldown Regulável) + FRZZ + Anti AFK
 ]]
 
 -- Serviços
@@ -10,7 +10,6 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -31,9 +30,9 @@ local CONFIG = {
     FRZZ_ENABLED = false,
     frozenCFrame = nil,
     AURA_ENABLED = false,
-    AURA_INTERVAL = 5,
+    AURA_INTERVAL = 7,
     ANTI_AFK_ENABLED = false,
-    ANTI_AFK_INTERVAL = 180, -- 3 minutos
+    ANTI_AFK_INTERVAL = 180,
 }
 
 -- ==================== NOTIFICAÇÕES ====================
@@ -323,22 +322,48 @@ local function createMainUI()
     afTargetLabel.TextXAlignment = Enum.TextXAlignment.Center
     afTargetLabel.Parent = autoFarmPage
     
+    -- Cooldown da Aura
+    local auraCdLabel = Instance.new("TextLabel")
+    auraCdLabel.Size = UDim2.new(0.5, 0, 0, 16)
+    auraCdLabel.Position = UDim2.new(0.02, 0, 0, 96)
+    auraCdLabel.BackgroundTransparency = 1
+    auraCdLabel.Text = "CD Aura (s):"
+    auraCdLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    auraCdLabel.Font = Enum.Font.GothamMedium
+    auraCdLabel.TextSize = 9
+    auraCdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    auraCdLabel.Parent = autoFarmPage
+    
+    local auraCdBox = Instance.new("TextBox")
+    auraCdBox.Size = UDim2.new(0.2, 0, 0, 18)
+    auraCdBox.Position = UDim2.new(0.38, 0, 0, 95)
+    auraCdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL)
+    auraCdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    auraCdBox.Font = Enum.Font.GothamBold
+    auraCdBox.TextSize = 11
+    auraCdBox.BorderSizePixel = 0
+    auraCdBox.PlaceholderText = "7"
+    auraCdBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+    auraCdBox.Parent = autoFarmPage
+    Instance.new("UICorner", auraCdBox).CornerRadius = UDim.new(0, 5)
+    
     -- Botão Anti AFK
     local antiAfkToggle = Instance.new("TextButton")
-    antiAfkToggle.Size = UDim2.new(1, -20, 0, 22)
-    antiAfkToggle.Position = UDim2.new(0, 10, 0, 96)
+    antiAfkToggle.Size = UDim2.new(0.35, 0, 0, 20)
+    antiAfkToggle.Position = UDim2.new(0.63, 0, 0, 94)
     antiAfkToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    antiAfkToggle.Text = "🛡️ ANTI AFK: OFF (Pula a cada 3min)"
+    antiAfkToggle.Text = "AFK: OFF"
     antiAfkToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     antiAfkToggle.Font = Enum.Font.GothamBold
     antiAfkToggle.TextSize = 9
     antiAfkToggle.BorderSizePixel = 0
     antiAfkToggle.Parent = autoFarmPage
-    Instance.new("UICorner", antiAfkToggle).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", antiAfkToggle).CornerRadius = UDim.new(0, 5)
     
     local selectLabel = Instance.new("TextLabel")
     selectLabel.Size = UDim2.new(1, -20, 0, 16)
-    selectLabel.Position = UDim2.new(0, 10, 0, 122)
+    selectLabel.Position = UDim2.new(0, 10, 0, 118)
     selectLabel.BackgroundTransparency = 1
     selectLabel.Text = "🎯 Selecione o alvo:"
     selectLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -350,7 +375,7 @@ local function createMainUI()
     -- Lista de alvos
     local targetList = Instance.new("ScrollingFrame")
     targetList.Size = UDim2.new(1, -20, 0.45, 0)
-    targetList.Position = UDim2.new(0, 10, 0, 140)
+    targetList.Position = UDim2.new(0, 10, 0, 136)
     targetList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     targetList.BorderSizePixel = 0
     targetList.ScrollBarThickness = 3
@@ -569,7 +594,7 @@ local function createMainUI()
         setSpawnBtn = setSpawnBtn, clearSpawnBtn = clearSpawnBtn, spStatus = spStatus,
         afToggle = afToggle, afStatus = afStatus, afTargetLabel = afTargetLabel,
         targetList = targetList, frzzToggle = frzzToggle, auraToggle = auraToggle,
-        antiAfkToggle = antiAfkToggle,
+        antiAfkToggle = antiAfkToggle, auraCdBox = auraCdBox,
     }
 end
 
@@ -689,7 +714,7 @@ local function setupTeleportSystem(ui)
     updatePlayerList()
 end
 
--- ==================== AUTO FARM + RESET + AURA + FRZZ + ANTI AFK ====================
+-- ==================== AUTO FARM + RESET + AURA (COOLDOWN REGULÁVEL) + FRZZ + ANTI AFK ====================
 local function setupAutoFarm(ui)
     local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
     if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
@@ -723,6 +748,16 @@ local function setupAutoFarm(ui)
             char.Humanoid.Health = 0
         end
     end
+    
+    -- Atualiza cooldown da aura quando digita
+    ui.auraCdBox.FocusLost:Connect(function()
+        local num = tonumber(ui.auraCdBox.Text)
+        if num and num >= 1 then
+            CONFIG.AURA_INTERVAL = num
+        else
+            ui.auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL)
+        end
+    end)
     
     -- INICIAR Auto Farm
     ui.afToggle.MouseButton1Click:Connect(function()
@@ -810,10 +845,15 @@ local function setupAutoFarm(ui)
         end
     end)
     
-    -- AURA DE DANO
+    -- AURA DE DANO (com cooldown regulável)
     ui.auraToggle.MouseButton1Click:Connect(function()
         CONFIG.AURA_ENABLED = not CONFIG.AURA_ENABLED
         if CONFIG.AURA_ENABLED then
+            -- Pega valor da caixa
+            local num = tonumber(ui.auraCdBox.Text)
+            if num and num >= 1 then CONFIG.AURA_INTERVAL = num end
+            ui.auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL)
+            
             ui.auraToggle.Text = "AURA: ON"
             ui.auraToggle.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
             ui.notificationSystem:Show("💥 Aura de Dano ATIVADA! (a cada " .. CONFIG.AURA_INTERVAL .. "s)")
@@ -848,37 +888,25 @@ local function setupAutoFarm(ui)
     ui.antiAfkToggle.MouseButton1Click:Connect(function()
         CONFIG.ANTI_AFK_ENABLED = not CONFIG.ANTI_AFK_ENABLED
         if CONFIG.ANTI_AFK_ENABLED then
-            ui.antiAfkToggle.Text = "🛡️ ANTI AFK: ON (Pula a cada 3min)"
+            ui.antiAfkToggle.Text = "AFK: ON"
             ui.antiAfkToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-            ui.notificationSystem:Show("🛡️ Anti AFK ATIVADO! (Pulo a cada 3min)")
-            
+            ui.notificationSystem:Show("🛡️ Anti AFK ATIVADO!")
             task.spawn(function()
                 while CONFIG.ANTI_AFK_ENABLED do
                     task.wait(CONFIG.ANTI_AFK_INTERVAL)
                     if CONFIG.ANTI_AFK_ENABLED then
-                        -- Simula pulo
                         pcall(function()
                             local char = LocalPlayer.Character
                             if char and char:FindFirstChild("Humanoid") then
                                 char.Humanoid.Jump = true
                             end
                         end)
-                        -- Move um pouco pra frente e volta
-                        pcall(function()
-                            local char = LocalPlayer.Character
-                            if char and char:FindFirstChild("Humanoid") then
-                                char.Humanoid:Move(Vector3.new(1, 0, 0), false)
-                                task.wait(0.1)
-                                char.Humanoid:Move(Vector3.new(-1, 0, 0), false)
-                            end
-                        end)
                     end
                 end
             end)
         else
-            ui.antiAfkToggle.Text = "🛡️ ANTI AFK: OFF (Pula a cada 3min)"
+            ui.antiAfkToggle.Text = "AFK: OFF"
             ui.antiAfkToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-            ui.notificationSystem:Show("🛡️ Anti AFK DESATIVADO!")
         end
     end)
     
