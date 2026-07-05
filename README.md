@@ -1,6 +1,6 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 1.0.4
+    Versão: 1.0.5
     Fast Punch + Teleporte Funcional + Loop TP + Spawnpoint
 ]]
 
