@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO)
-    Versão: 2.3.2
-    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill com Reset + Aura de Dano (Cooldown Regulável) + FRZZ + Anti AFK
+    Versão: Final
+    Fast Punch + Teleport + Loop TP + Spawnpoint + Auto Farm Kill com Reset + Aura de Dano + FRZZ + Anti AFK
 ]]
 
 -- Serviços
@@ -13,7 +13,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Variáveis de configuração
 local CONFIG = {
     UI_NAME = "Age of Heroes Premium",
     FAST_PUNCH_ENABLED = false,
@@ -32,7 +31,6 @@ local CONFIG = {
     AURA_ENABLED = false,
     AURA_INTERVAL = 7,
     ANTI_AFK_ENABLED = false,
-    ANTI_AFK_INTERVAL = 180,
 }
 
 -- ==================== NOTIFICAÇÕES ====================
@@ -64,9 +62,7 @@ local function createMainUI()
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Frame Principal
     local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 500, 0, 420)
     mainFrame.Position = UDim2.new(0.5, -250, 0.5, -210)
     mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -74,22 +70,14 @@ local function createMainUI()
     mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = screenGui
+    Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 16)
     
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 16)
-    mainCorner.Parent = mainFrame
-    
-    -- Barra de Título
     local titleBar = Instance.new("Frame")
-    titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 45)
     titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     titleBar.BorderSizePixel = 0
     titleBar.Parent = mainFrame
-    
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 16)
-    titleCorner.Parent = titleBar
+    Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 16)
     
     local titleBottom = Instance.new("Frame")
     titleBottom.Size = UDim2.new(1, 0, 0.5, 0)
@@ -110,7 +98,6 @@ local function createMainUI()
     titleLabel.Parent = titleBar
     
     local minimizeButton = Instance.new("TextButton")
-    minimizeButton.Name = "MinimizeButton"
     minimizeButton.Size = UDim2.new(0, 30, 0, 30)
     minimizeButton.Position = UDim2.new(1, -75, 0, 7)
     minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -123,7 +110,6 @@ local function createMainUI()
     Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 8)
     
     local closeButton = Instance.new("TextButton")
-    closeButton.Name = "CloseButton"
     closeButton.Size = UDim2.new(0, 30, 0, 30)
     closeButton.Position = UDim2.new(1, -35, 0, 7)
     closeButton.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
@@ -135,25 +121,18 @@ local function createMainUI()
     closeButton.Parent = titleBar
     Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
     
-    -- Container de Conteúdo
     local contentFrame = Instance.new("Frame")
-    contentFrame.Name = "ContentFrame"
     contentFrame.Size = UDim2.new(1, 0, 1, -45)
     contentFrame.Position = UDim2.new(0, 0, 0, 45)
     contentFrame.BackgroundTransparency = 1
     contentFrame.Parent = mainFrame
     
-    -- Barra de Navegação
     local navBar = Instance.new("Frame")
-    navBar.Name = "NavBar"
     navBar.Size = UDim2.new(0, 150, 1, 0)
     navBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     navBar.BorderSizePixel = 0
     navBar.Parent = contentFrame
-    
-    local navCorner = Instance.new("UICorner")
-    navCorner.CornerRadius = UDim.new(0, 16)
-    navCorner.Parent = navBar
+    Instance.new("UICorner", navBar).CornerRadius = UDim.new(0, 16)
     
     local navRight = Instance.new("Frame")
     navRight.Size = UDim2.new(0.5, 0, 1, 0)
@@ -162,15 +141,12 @@ local function createMainUI()
     navRight.BorderSizePixel = 0
     navRight.Parent = navBar
     
-    -- Área de Conteúdo Principal
     local mainContent = Instance.new("Frame")
-    mainContent.Name = "MainContent"
     mainContent.Size = UDim2.new(1, -160, 1, -10)
     mainContent.Position = UDim2.new(0, 155, 0, 5)
     mainContent.BackgroundTransparency = 1
     mainContent.Parent = contentFrame
     
-    -- Botões de Navegação
     local function createNavButton(text, position)
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(1, -20, 0, 30)
@@ -186,10 +162,9 @@ local function createMainUI()
         return button
     end
     
-    -- Páginas
     local pages = {}
     
-    -- ========== PÁGINA FAST PUNCH ==========
+    -- FAST PUNCH PAGE
     local fastPunchPage = Instance.new("Frame")
     fastPunchPage.Size = UDim2.new(1, 0, 1, 0)
     fastPunchPage.BackgroundTransparency = 1
@@ -208,18 +183,6 @@ local function createMainUI()
     fpTitle.TextXAlignment = Enum.TextXAlignment.Center
     fpTitle.Parent = fastPunchPage
     
-    local fpDesc = Instance.new("TextLabel")
-    fpDesc.Size = UDim2.new(1, -20, 0, 40)
-    fpDesc.Position = UDim2.new(0, 10, 0, 50)
-    fpDesc.BackgroundTransparency = 1
-    fpDesc.Text = "Ataque rápido como uma metralhadora!"
-    fpDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
-    fpDesc.Font = Enum.Font.GothamMedium
-    fpDesc.TextSize = 12
-    fpDesc.TextWrapped = true
-    fpDesc.TextXAlignment = Enum.TextXAlignment.Center
-    fpDesc.Parent = fastPunchPage
-    
     local fpToggle = Instance.new("TextButton")
     fpToggle.Size = UDim2.new(0.4, 0, 0, 50)
     fpToggle.Position = UDim2.new(0.3, 0, 0, 110)
@@ -232,18 +195,7 @@ local function createMainUI()
     fpToggle.Parent = fastPunchPage
     Instance.new("UICorner", fpToggle).CornerRadius = UDim.new(0, 12)
     
-    local staminaLabel = Instance.new("TextLabel")
-    staminaLabel.Size = UDim2.new(1, -20, 0, 30)
-    staminaLabel.Position = UDim2.new(0, 10, 0, 180)
-    staminaLabel.BackgroundTransparency = 1
-    staminaLabel.Text = "Stamina: --"
-    staminaLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    staminaLabel.Font = Enum.Font.GothamMedium
-    staminaLabel.TextSize = 14
-    staminaLabel.TextXAlignment = Enum.TextXAlignment.Center
-    staminaLabel.Parent = fastPunchPage
-    
-    -- ========== PÁGINA AUTO FARM KILL + AURA ==========
+    -- AUTO FARM PAGE
     local autoFarmPage = Instance.new("Frame")
     autoFarmPage.Size = UDim2.new(1, 0, 1, 0)
     autoFarmPage.BackgroundTransparency = 1
@@ -262,7 +214,6 @@ local function createMainUI()
     afTitle.TextXAlignment = Enum.TextXAlignment.Center
     afTitle.Parent = autoFarmPage
     
-    -- Botões: INICIAR + FRZZ + AURA
     local afToggle = Instance.new("TextButton")
     afToggle.Size = UDim2.new(0.3, 0, 0, 24)
     afToggle.Position = UDim2.new(0.02, 0, 0, 30)
@@ -299,7 +250,6 @@ local function createMainUI()
     auraToggle.Parent = autoFarmPage
     Instance.new("UICorner", auraToggle).CornerRadius = UDim.new(0, 6)
     
-    -- Status
     local afStatus = Instance.new("TextLabel")
     afStatus.Size = UDim2.new(1, -20, 0, 16)
     afStatus.Position = UDim2.new(0, 10, 0, 60)
@@ -322,7 +272,6 @@ local function createMainUI()
     afTargetLabel.TextXAlignment = Enum.TextXAlignment.Center
     afTargetLabel.Parent = autoFarmPage
     
-    -- Cooldown da Aura
     local auraCdLabel = Instance.new("TextLabel")
     auraCdLabel.Size = UDim2.new(0.5, 0, 0, 16)
     auraCdLabel.Position = UDim2.new(0.02, 0, 0, 96)
@@ -348,22 +297,22 @@ local function createMainUI()
     auraCdBox.Parent = autoFarmPage
     Instance.new("UICorner", auraCdBox).CornerRadius = UDim.new(0, 5)
     
-    -- Botão Anti AFK
-    local antiAfkToggle = Instance.new("TextButton")
-    antiAfkToggle.Size = UDim2.new(0.35, 0, 0, 20)
-    antiAfkToggle.Position = UDim2.new(0.63, 0, 0, 94)
-    antiAfkToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    antiAfkToggle.Text = "AFK: OFF"
-    antiAfkToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    antiAfkToggle.Font = Enum.Font.GothamBold
-    antiAfkToggle.TextSize = 9
-    antiAfkToggle.BorderSizePixel = 0
-    antiAfkToggle.Parent = autoFarmPage
-    Instance.new("UICorner", antiAfkToggle).CornerRadius = UDim.new(0, 5)
+    -- BOTÃO ANTI AFK
+    local antiAfkBtn = Instance.new("TextButton")
+    antiAfkBtn.Size = UDim2.new(0.3, 0, 0, 20)
+    antiAfkBtn.Position = UDim2.new(0.35, 0, 0, 96)
+    antiAfkBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    antiAfkBtn.Text = "AFK: OFF"
+    antiAfkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    antiAfkBtn.Font = Enum.Font.GothamBold
+    antiAfkBtn.TextSize = 9
+    antiAfkBtn.BorderSizePixel = 0
+    antiAfkBtn.Parent = autoFarmPage
+    Instance.new("UICorner", antiAfkBtn).CornerRadius = UDim.new(0, 5)
     
     local selectLabel = Instance.new("TextLabel")
     selectLabel.Size = UDim2.new(1, -20, 0, 16)
-    selectLabel.Position = UDim2.new(0, 10, 0, 118)
+    selectLabel.Position = UDim2.new(0, 10, 0, 120)
     selectLabel.BackgroundTransparency = 1
     selectLabel.Text = "🎯 Selecione o alvo:"
     selectLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -372,10 +321,9 @@ local function createMainUI()
     selectLabel.TextXAlignment = Enum.TextXAlignment.Center
     selectLabel.Parent = autoFarmPage
     
-    -- Lista de alvos
     local targetList = Instance.new("ScrollingFrame")
-    targetList.Size = UDim2.new(1, -20, 0.45, 0)
-    targetList.Position = UDim2.new(0, 10, 0, 136)
+    targetList.Size = UDim2.new(1, -20, 0.42, 0)
+    targetList.Position = UDim2.new(0, 10, 0, 138)
     targetList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     targetList.BorderSizePixel = 0
     targetList.ScrollBarThickness = 3
@@ -387,7 +335,7 @@ local function createMainUI()
     targetLayout.Padding = UDim.new(0, 2)
     targetLayout.Parent = targetList
     
-    -- ========== PÁGINA TELEPORT ==========
+    -- TELEPORT PAGE
     local teleportPage = Instance.new("Frame")
     teleportPage.Size = UDim2.new(1, 0, 1, 0)
     teleportPage.BackgroundTransparency = 1
@@ -420,7 +368,6 @@ local function createMainUI()
     listLayout.Padding = UDim.new(0, 3)
     listLayout.Parent = playerList
     
-    -- Loop TP
     local loopFrame = Instance.new("Frame")
     loopFrame.Size = UDim2.new(1, -20, 0, 110)
     loopFrame.Position = UDim2.new(0, 10, 0, 255)
@@ -463,7 +410,7 @@ local function createMainUI()
     loopToggle.Parent = loopFrame
     Instance.new("UICorner", loopToggle).CornerRadius = UDim.new(0, 8)
     
-    -- ========== PÁGINA SPAWNPOINT ==========
+    -- SPAWNPOINT PAGE
     local spawnPage = Instance.new("Frame")
     spawnPage.Size = UDim2.new(1, 0, 1, 0)
     spawnPage.BackgroundTransparency = 1
@@ -517,13 +464,13 @@ local function createMainUI()
     clearSpawnBtn.Parent = spawnPage
     Instance.new("UICorner", clearSpawnBtn).CornerRadius = UDim.new(0, 8)
     
-    -- Botões de Navegação
+    -- NAV BUTTONS
     local fastPunchBtn = createNavButton("⚡ Fast Punch", 10)
     local autoFarmBtn = createNavButton("🤖 Auto Farm", 45)
     local teleportBtn = createNavButton("🌍 Teleport", 80)
     local spawnBtn = createNavButton("📍 Spawnpoint", 115)
     
-    -- Sistema de arrastar
+    -- ARRASTAR
     local dragging = false
     local dragStart = nil
     local startPos = nil
@@ -547,7 +494,7 @@ local function createMainUI()
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     
-    -- Navegação
+    -- NAVEGAÇÃO
     local function switchPage(pageName)
         for name, page in pairs(pages) do page.Visible = (name == pageName) end
         fastPunchBtn.BackgroundColor3 = Color3.fromRGB(pageName == "FastPunch" and 60 or 40, 40, 40)
@@ -561,7 +508,7 @@ local function createMainUI()
     teleportBtn.MouseButton1Click:Connect(function() switchPage("Teleport") end)
     spawnBtn.MouseButton1Click:Connect(function() switchPage("Spawn") end)
     
-    -- Minimizar
+    -- MINIMIZAR
     local minimized = false
     local originalSize = mainFrame.Size
     minimizeButton.MouseButton1Click:Connect(function()
@@ -575,7 +522,7 @@ local function createMainUI()
         end
     end)
     
-    -- Fechar
+    -- FECHAR
     closeButton.MouseButton1Click:Connect(function()
         CONFIG.FAST_PUNCH_ENABLED = false
         CONFIG.LOOP_TP_ENABLED = false
@@ -587,14 +534,14 @@ local function createMainUI()
     end)
     
     return {
-        screenGui = screenGui, mainFrame = mainFrame, fpToggle = fpToggle, staminaLabel = staminaLabel,
+        screenGui = screenGui, mainFrame = mainFrame, fpToggle = fpToggle,
         playerList = playerList, notificationSystem = NotificationSystem.new(), pages = pages,
         teleportPage = teleportPage, fastPunchPage = fastPunchPage, autoFarmPage = autoFarmPage,
         spawnPage = spawnPage, loopToggle = loopToggle, loopTargetLabel = loopTargetLabel,
         setSpawnBtn = setSpawnBtn, clearSpawnBtn = clearSpawnBtn, spStatus = spStatus,
         afToggle = afToggle, afStatus = afStatus, afTargetLabel = afTargetLabel,
         targetList = targetList, frzzToggle = frzzToggle, auraToggle = auraToggle,
-        antiAfkToggle = antiAfkToggle, auraCdBox = auraCdBox,
+        auraCdBox = auraCdBox, antiAfkBtn = antiAfkBtn,
     }
 end
 
@@ -714,7 +661,7 @@ local function setupTeleportSystem(ui)
     updatePlayerList()
 end
 
--- ==================== AUTO FARM + RESET + AURA (COOLDOWN REGULÁVEL) + FRZZ + ANTI AFK ====================
+-- ==================== AUTO FARM + RESET + AURA + FRZZ + ANTI AFK ====================
 local function setupAutoFarm(ui)
     local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
     if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
@@ -749,17 +696,12 @@ local function setupAutoFarm(ui)
         end
     end
     
-    -- Atualiza cooldown da aura quando digita
     ui.auraCdBox.FocusLost:Connect(function()
         local num = tonumber(ui.auraCdBox.Text)
-        if num and num >= 1 then
-            CONFIG.AURA_INTERVAL = num
-        else
-            ui.auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL)
-        end
+        if num and num >= 1 then CONFIG.AURA_INTERVAL = num else ui.auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL) end
     end)
     
-    -- INICIAR Auto Farm
+    -- INICIAR
     ui.afToggle.MouseButton1Click:Connect(function()
         CONFIG.AUTO_FARM_ENABLED = not CONFIG.AUTO_FARM_ENABLED
         if CONFIG.AUTO_FARM_ENABLED then
@@ -780,18 +722,15 @@ local function setupAutoFarm(ui)
                         end
                         if not CONFIG.AUTO_FARM_ENABLED then break end
                         
-                        -- RESET após matar
                         ui.afStatus.Text = "Status: Resetando..."
                         ui.notificationSystem:Show("💀 " .. selectedTarget.Name .. " morreu! Resetando...")
                         resetCharacter()
                         task.wait(0.5)
                         
-                        -- Espera renascer
                         ui.afStatus.Text = "Status: Aguardando renascer..."
                         while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do task.wait(0.5) end
                         if not CONFIG.AUTO_FARM_ENABLED then break end
                         
-                        -- Espera escudo
                         ui.afStatus.Text = "Status: Aguardando escudo..."
                         for i = CONFIG.SHIELD_WAIT, 1, -1 do
                             if not CONFIG.AUTO_FARM_ENABLED then break end
@@ -845,11 +784,10 @@ local function setupAutoFarm(ui)
         end
     end)
     
-    -- AURA DE DANO (com cooldown regulável)
+    -- AURA
     ui.auraToggle.MouseButton1Click:Connect(function()
         CONFIG.AURA_ENABLED = not CONFIG.AURA_ENABLED
         if CONFIG.AURA_ENABLED then
-            -- Pega valor da caixa
             local num = tonumber(ui.auraCdBox.Text)
             if num and num >= 1 then CONFIG.AURA_INTERVAL = num end
             ui.auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL)
@@ -885,32 +823,47 @@ local function setupAutoFarm(ui)
     end)
     
     -- ANTI AFK
-    ui.antiAfkToggle.MouseButton1Click:Connect(function()
+    ui.antiAfkBtn.MouseButton1Click:Connect(function()
         CONFIG.ANTI_AFK_ENABLED = not CONFIG.ANTI_AFK_ENABLED
         if CONFIG.ANTI_AFK_ENABLED then
-            ui.antiAfkToggle.Text = "AFK: ON"
-            ui.antiAfkToggle.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+            ui.antiAfkBtn.Text = "AFK: ON"
+            ui.antiAfkBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
             ui.notificationSystem:Show("🛡️ Anti AFK ATIVADO!")
+            -- Pula imediatamente
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    char.Humanoid.Jump = true
+                end
+            end)
+            -- Loop
             task.spawn(function()
                 while CONFIG.ANTI_AFK_ENABLED do
-                    task.wait(CONFIG.ANTI_AFK_INTERVAL)
+                    task.wait(180)
                     if CONFIG.ANTI_AFK_ENABLED then
                         pcall(function()
                             local char = LocalPlayer.Character
-                            if char and char:FindFirstChild("Humanoid") then
-                                char.Humanoid.Jump = true
+                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                local root = char.HumanoidRootPart
+                                root.CFrame = root.CFrame * CFrame.new(1, 0, 0)
+                                task.wait(0.05)
+                                root.CFrame = root.CFrame * CFrame.new(-1, 0, 0)
+                                if char:FindFirstChild("Humanoid") then
+                                    char.Humanoid.Jump = true
+                                end
                             end
                         end)
                     end
                 end
             end)
         else
-            ui.antiAfkToggle.Text = "AFK: OFF"
-            ui.antiAfkToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            ui.antiAfkBtn.Text = "AFK: OFF"
+            ui.antiAfkBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            ui.notificationSystem:Show("🛡️ Anti AFK DESATIVADO!")
         end
     end)
     
-    -- Lista de alvos
+    -- LISTA DE ALVOS
     local function updateTargetList()
         pcall(function()
             for _, child in pairs(ui.targetList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
