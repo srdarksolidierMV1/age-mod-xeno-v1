@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO) - VANTABLACK EDITION
-    Versão: 3.2.0
-    Design preto absoluto profissional
+    Versão: 3.2.8 ESTÁVEL
+    Sync Dupla A/B alternado + Player Notify funcional
 ]]
 
 -- Serviços
@@ -30,10 +30,11 @@ local CONFIG = {
     frozenCFrame = nil,
     AURA_ENABLED = false,
     AURA_INTERVAL = 7,
-    ANTI_AFK_ENABLED = false,
+    AUTO_METAL_ON = false,
+    TELECINESE_ON = false,
+    PLAYER_NOTIF_ON = false,
 }
 
--- ==================== CORES VANTABLACK ====================
 local C = {
     BG = Color3.fromRGB(5, 5, 5),
     HEADER = Color3.fromRGB(8, 8, 8),
@@ -43,24 +44,13 @@ local C = {
     ACCENT = Color3.fromRGB(180, 180, 180),
     RED = Color3.fromRGB(180, 50, 50),
     GREEN = Color3.fromRGB(50, 160, 70),
+    YELLOW = Color3.fromRGB(200, 160, 40),
     TEXT = Color3.fromRGB(180, 180, 180),
     TEXT2 = Color3.fromRGB(100, 100, 100),
     BORDER = Color3.fromRGB(20, 20, 20),
     WHITE = Color3.fromRGB(255, 255, 255),
 }
 
--- ==================== IDs DE IMAGENS (LOGO) ====================
--- Para usar suas próprias logos, substitua os números abaixo pelos IDs das imagens que você upar no Roblox
-local IMAGES = {
-    LOGO_MAIN = "rbxassetid://18876119190", -- Ícone pequeno no título (substitua pelo seu)
-    ICON_PUNCH = "rbxassetid://18876119190", -- Ícone Fast Punch
-    ICON_FARM = "rbxassetid://18876119190", -- Ícone Auto Farm
-    ICON_SYNC = "rbxassetid://18876119190", -- Ícone Sync Dupla
-    ICON_TP = "rbxassetid://18876119190", -- Ícone Teleport
-    ICON_SPAWN = "rbxassetid://18876119190", -- Ícone Spawnpoint
-}
-
--- ==================== NOTIFICAÇÕES ====================
 local NotificationSystem = {}
 NotificationSystem.__index = NotificationSystem
 
@@ -81,7 +71,6 @@ function NotificationSystem:Show(message, duration)
     end)
 end
 
--- ==================== UI PRINCIPAL ====================
 local function createMainUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AOH_Vanta"
@@ -89,7 +78,6 @@ local function createMainUI()
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Frame Principal
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 490, 0, 400)
     mainFrame.Position = UDim2.new(0.5, -245, 0.5, -200)
@@ -98,23 +86,8 @@ local function createMainUI()
     mainFrame.BorderColor3 = C.BORDER
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = screenGui
-    
-    -- Sombra externa
-    local shadow = Instance.new("ImageLabel")
-    shadow.Size = UDim2.new(1, 24, 1, 24)
-    shadow.Position = UDim2.new(0, -12, 0, -12)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://6014261993"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.5
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    shadow.ZIndex = -1
-    shadow.Parent = mainFrame
-    
     Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
     
-    -- Barra de Título
     local titleBar = Instance.new("Frame")
     titleBar.Size = UDim2.new(1, 0, 0, 40)
     titleBar.BackgroundColor3 = C.HEADER
@@ -129,17 +102,9 @@ local function createMainUI()
     titleFix.BorderSizePixel = 0
     titleFix.Parent = titleBar
     
-    -- Logo no título
-    local logoIcon = Instance.new("ImageLabel")
-    logoIcon.Size = UDim2.new(0, 18, 0, 18)
-    logoIcon.Position = UDim2.new(0, 14, 0.5, -9)
-    logoIcon.BackgroundTransparency = 1
-    logoIcon.Image = IMAGES.LOGO_MAIN
-    logoIcon.Parent = titleBar
-    
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    titleLabel.Position = UDim2.new(0, 40, 0, 0)
+    titleLabel.Position = UDim2.new(0, 14, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = CONFIG.UI_NAME
     titleLabel.TextColor3 = C.TEXT
@@ -148,15 +113,6 @@ local function createMainUI()
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = titleBar
     
-    -- Linha decorativa abaixo do título
-    local titleLine = Instance.new("Frame")
-    titleLine.Size = UDim2.new(1, 0, 0, 1)
-    titleLine.Position = UDim2.new(0, 0, 1, -1)
-    titleLine.BackgroundColor3 = C.BORDER
-    titleLine.BorderSizePixel = 0
-    titleLine.Parent = titleBar
-    
-    -- Botões da barra
     local minimizeButton = Instance.new("TextButton")
     minimizeButton.Size = UDim2.new(0, 26, 0, 22)
     minimizeButton.Position = UDim2.new(1, -58, 0.5, -11)
@@ -168,8 +124,6 @@ local function createMainUI()
     minimizeButton.BorderSizePixel = 0
     minimizeButton.Parent = titleBar
     Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 4)
-    minimizeButton.MouseEnter:Connect(function() minimizeButton.BackgroundColor3 = C.BTN_HOVER end)
-    minimizeButton.MouseLeave:Connect(function() minimizeButton.BackgroundColor3 = C.BTN end)
     
     local closeButton = Instance.new("TextButton")
     closeButton.Size = UDim2.new(0, 26, 0, 22)
@@ -182,10 +136,7 @@ local function createMainUI()
     closeButton.BorderSizePixel = 0
     closeButton.Parent = titleBar
     Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 4)
-    closeButton.MouseEnter:Connect(function() closeButton.BackgroundColor3 = C.RED closeButton.TextColor3 = C.WHITE end)
-    closeButton.MouseLeave:Connect(function() closeButton.BackgroundColor3 = C.BTN closeButton.TextColor3 = C.TEXT2 end)
     
-    -- Container
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, 0, 1, -40)
     contentFrame.Position = UDim2.new(0, 0, 0, 40)
@@ -193,7 +144,6 @@ local function createMainUI()
     contentFrame.ClipsDescendants = true
     contentFrame.Parent = mainFrame
     
-    -- Navbar
     local navBar = Instance.new("Frame")
     navBar.Size = UDim2.new(0, 140, 1, 0)
     navBar.BackgroundColor3 = C.NAV
@@ -208,7 +158,6 @@ local function createMainUI()
     navFix.BorderSizePixel = 0
     navFix.Parent = navBar
     
-    -- Área de conteúdo
     local mainContent = Instance.new("Frame")
     mainContent.Size = UDim2.new(1, -150, 1, -10)
     mainContent.Position = UDim2.new(0, 145, 0, 5)
@@ -216,10 +165,9 @@ local function createMainUI()
     mainContent.BorderSizePixel = 0
     mainContent.Parent = contentFrame
     
-    -- Função para criar botões de navegação (com ícone de imagem)
-    local function createNavButton(text, position, iconId)
+    local function createNavButton(text, position)
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -14, 0, 28)
+        button.Size = UDim2.new(1, -14, 0, 26)
         button.Position = UDim2.new(0, 7, 0, position)
         button.BackgroundColor3 = C.BTN
         button.Text = "     " .. text
@@ -231,25 +179,11 @@ local function createMainUI()
         button.AutoButtonColor = false
         button.Parent = navBar
         Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
-        
-        -- Ícone do botão
-        if iconId then
-            local icon = Instance.new("ImageLabel")
-            icon.Size = UDim2.new(0, 16, 0, 16)
-            icon.Position = UDim2.new(0, 8, 0.5, -8)
-            icon.BackgroundTransparency = 1
-            icon.Image = iconId
-            icon.Name = "Icon"
-            icon.Parent = button
-        end
-        
         button.MouseEnter:Connect(function() button.BackgroundColor3 = C.BTN_HOVER end)
         button.MouseLeave:Connect(function() button.BackgroundColor3 = C.BTN end)
-        
         return button
     end
     
-    -- Função para criar botões de ação
     local function createActionButton(text, sizeX, posX, posY, color, parent)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(sizeX, 0, 0, 28)
@@ -263,16 +197,12 @@ local function createMainUI()
         btn.AutoButtonColor = false
         btn.Parent = parent
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-        
-        btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.BTN_HOVER end)
-        btn.MouseLeave:Connect(function() btn.BackgroundColor3 = color or C.BTN end)
-        
         return btn
     end
     
     local pages = {}
     
-    -- ========== FAST PUNCH ==========
+    -- FAST PUNCH
     local fastPunchPage = Instance.new("Frame")
     fastPunchPage.Size = UDim2.new(1, 0, 1, 0)
     fastPunchPage.BackgroundColor3 = C.BG
@@ -281,12 +211,10 @@ local function createMainUI()
     fastPunchPage.Parent = mainContent
     pages["FastPunch"] = fastPunchPage
     
-    -- Linha decorativa
     local fpLine = Instance.new("Frame")
     fpLine.Size = UDim2.new(1, -24, 0, 1)
     fpLine.Position = UDim2.new(0, 12, 0, 28)
     fpLine.BackgroundColor3 = C.BORDER
-    fpLine.BorderSizePixel = 0
     fpLine.Parent = fastPunchPage
     
     local fpTitle = Instance.new("TextLabel")
@@ -312,10 +240,8 @@ local function createMainUI()
     fpToggle.AutoButtonColor = false
     fpToggle.Parent = fastPunchPage
     Instance.new("UICorner", fpToggle).CornerRadius = UDim.new(0, 5)
-    fpToggle.MouseEnter:Connect(function() fpToggle.BackgroundColor3 = C.BTN_HOVER end)
-    fpToggle.MouseLeave:Connect(function() fpToggle.BackgroundColor3 = C.BTN end)
     
-    -- ========== AUTO FARM ==========
+    -- AUTO FARM
     local autoFarmPage = Instance.new("Frame")
     autoFarmPage.Size = UDim2.new(1, 0, 1, 0)
     autoFarmPage.BackgroundColor3 = C.BG
@@ -342,8 +268,8 @@ local function createMainUI()
     afTitle.Parent = autoFarmPage
     
     local afToggle = createActionButton("START", 0.28, 0.02, 34, C.BTN, autoFarmPage)
-    local frzzToggle = createActionButton("FREEZE: OFF", 0.28, 0.33, 34, C.BTN, autoFarmPage)
-    local auraToggle = createActionButton("AURA: OFF", 0.28, 0.64, 34, C.BTN, autoFarmPage)
+    local frzzToggle = createActionButton("FREEZE  OFF", 0.28, 0.33, 34, C.BTN, autoFarmPage)
+    local auraToggle = createActionButton("AURA  OFF", 0.28, 0.64, 34, C.BTN, autoFarmPage)
     
     local afStatus = Instance.new("TextLabel")
     afStatus.Size = UDim2.new(1, -20, 0, 14)
@@ -368,35 +294,31 @@ local function createMainUI()
     afTargetLabel.Parent = autoFarmPage
     
     local auraCdLabel = Instance.new("TextLabel")
-    auraCdLabel.Size = UDim2.new(0.35, 0, 0, 14)
-    auraCdLabel.Position = UDim2.new(0.02, 0, 0, 100)
+    auraCdLabel.Size = UDim2.new(1, -20, 0, 14)
+    auraCdLabel.Position = UDim2.new(0, 10, 0, 100)
     auraCdLabel.BackgroundTransparency = 1
     auraCdLabel.Text = "Aura CD (s)"
     auraCdLabel.TextColor3 = C.TEXT2
     auraCdLabel.Font = Enum.Font.GothamMedium
     auraCdLabel.TextSize = 9
-    auraCdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    auraCdLabel.TextXAlignment = Enum.TextXAlignment.Center
     auraCdLabel.Parent = autoFarmPage
     
     local auraCdBox = Instance.new("TextBox")
     auraCdBox.Size = UDim2.new(0.2, 0, 0, 20)
-    auraCdBox.Position = UDim2.new(0.28, 0, 0, 97)
+    auraCdBox.Position = UDim2.new(0.4, 0, 0, 97)
     auraCdBox.BackgroundColor3 = C.BTN
     auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL)
     auraCdBox.TextColor3 = C.TEXT
     auraCdBox.Font = Enum.Font.GothamBold
     auraCdBox.TextSize = 11
     auraCdBox.BorderSizePixel = 0
-    auraCdBox.PlaceholderText = "7"
-    auraCdBox.PlaceholderColor3 = C.TEXT2
     auraCdBox.Parent = autoFarmPage
     Instance.new("UICorner", auraCdBox).CornerRadius = UDim.new(0, 5)
     
-    local antiAfkBtn = createActionButton("ANTI AFK  OFF", 0.3, 0.52, 97, C.BTN, autoFarmPage)
-    
     local selectLabel = Instance.new("TextLabel")
     selectLabel.Size = UDim2.new(1, -20, 0, 14)
-    selectLabel.Position = UDim2.new(0, 10, 0, 120)
+    selectLabel.Position = UDim2.new(0, 10, 0, 122)
     selectLabel.BackgroundTransparency = 1
     selectLabel.Text = "Select target"
     selectLabel.TextColor3 = C.TEXT2
@@ -407,11 +329,10 @@ local function createMainUI()
     
     local targetList = Instance.new("ScrollingFrame")
     targetList.Size = UDim2.new(1, -20, 0.40, 0)
-    targetList.Position = UDim2.new(0, 10, 0, 136)
+    targetList.Position = UDim2.new(0, 10, 0, 138)
     targetList.BackgroundColor3 = C.BTN
     targetList.BorderSizePixel = 0
     targetList.ScrollBarThickness = 2
-    targetList.ScrollBarImageColor3 = C.BORDER
     targetList.CanvasSize = UDim2.new(0, 0, 0, 0)
     targetList.Parent = autoFarmPage
     Instance.new("UICorner", targetList).CornerRadius = UDim.new(0, 5)
@@ -420,7 +341,7 @@ local function createMainUI()
     targetLayout.Padding = UDim.new(0, 2)
     targetLayout.Parent = targetList
     
-    -- ========== SYNC DUPLA ==========
+    -- SYNC DUPLA
     local syncPage = Instance.new("Frame")
     syncPage.Size = UDim2.new(1, 0, 1, 0)
     syncPage.BackgroundColor3 = C.BG
@@ -463,7 +384,6 @@ local function createMainUI()
     syncPlayerList.BackgroundColor3 = C.BTN
     syncPlayerList.BorderSizePixel = 0
     syncPlayerList.ScrollBarThickness = 2
-    syncPlayerList.ScrollBarImageColor3 = C.BORDER
     syncPlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
     syncPlayerList.Parent = syncPage
     Instance.new("UICorner", syncPlayerList).CornerRadius = UDim.new(0, 5)
@@ -472,13 +392,13 @@ local function createMainUI()
     syncListLayout.Padding = UDim.new(0, 2)
     syncListLayout.Parent = syncPlayerList
     
-    local agressorBtn = createActionButton("AGRESSOR", 0.42, 0.06, 210, C.BTN, syncPage)
-    local vitimaBtn = createActionButton("VICTIM", 0.42, 0.52, 210, C.BTN, syncPage)
-    local syncStopBtn = createActionButton("STOP", 0.42, 0.29, 244, C.BTN, syncPage)
+    local btnA = createActionButton("A (KILL FIRST)", 0.42, 0.06, 210, C.BTN, syncPage)
+    local btnB = createActionButton("B (DIE FIRST)", 0.42, 0.52, 210, C.BTN, syncPage)
+    local syncStopBtn = createActionButton("STOP", 0.42, 0.29, 248, C.RED, syncPage)
     
     local syncStatus = Instance.new("TextLabel")
     syncStatus.Size = UDim2.new(1, -20, 0, 14)
-    syncStatus.Position = UDim2.new(0, 10, 0, 278)
+    syncStatus.Position = UDim2.new(0, 10, 0, 282)
     syncStatus.BackgroundTransparency = 1
     syncStatus.Text = "Status  Idle"
     syncStatus.TextColor3 = C.TEXT2
@@ -487,7 +407,7 @@ local function createMainUI()
     syncStatus.TextXAlignment = Enum.TextXAlignment.Center
     syncStatus.Parent = syncPage
     
-    -- ========== TELEPORT ==========
+    -- TELEPORT
     local teleportPage = Instance.new("Frame")
     teleportPage.Size = UDim2.new(1, 0, 1, 0)
     teleportPage.BackgroundColor3 = C.BG
@@ -519,7 +439,6 @@ local function createMainUI()
     playerList.BackgroundColor3 = C.BTN
     playerList.BorderSizePixel = 0
     playerList.ScrollBarThickness = 2
-    playerList.ScrollBarImageColor3 = C.BORDER
     playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
     playerList.Parent = teleportPage
     Instance.new("UICorner", playerList).CornerRadius = UDim.new(0, 5)
@@ -571,7 +490,7 @@ local function createMainUI()
     loopToggle.Parent = loopFrame
     Instance.new("UICorner", loopToggle).CornerRadius = UDim.new(0, 5)
     
-    -- ========== SPAWNPOINT ==========
+    -- SPAWNPOINT
     local spawnPage = Instance.new("Frame")
     spawnPage.Size = UDim2.new(1, 0, 1, 0)
     spawnPage.BackgroundColor3 = C.BG
@@ -611,12 +530,43 @@ local function createMainUI()
     local setSpawnBtn = createActionButton("SET SPAWN", 0.5, 0.25, 125, C.BTN, spawnPage)
     local clearSpawnBtn = createActionButton("CLEAR", 0.5, 0.25, 168, C.BTN, spawnPage)
     
-    -- ========== NAVEGAÇÃO ==========
-    local fastPunchBtn = createNavButton("Fast Punch", 10, IMAGES.ICON_PUNCH)
-    local autoFarmBtn = createNavButton("Auto Farm", 43, IMAGES.ICON_FARM)
-    local syncBtn = createNavButton("Sync Dupla", 76, IMAGES.ICON_SYNC)
-    local teleportBtn = createNavButton("Teleport", 109, IMAGES.ICON_TP)
-    local spawnBtn = createNavButton("Spawnpoint", 142, IMAGES.ICON_SPAWN)
+    -- MISC
+    local miscPage = Instance.new("Frame")
+    miscPage.Size = UDim2.new(1, 0, 1, 0)
+    miscPage.BackgroundColor3 = C.BG
+    miscPage.BorderSizePixel = 0
+    miscPage.Visible = false
+    miscPage.Parent = mainContent
+    pages["Misc"] = miscPage
+    
+    local miscLine = Instance.new("Frame")
+    miscLine.Size = UDim2.new(1, -24, 0, 1)
+    miscLine.Position = UDim2.new(0, 12, 0, 24)
+    miscLine.BackgroundColor3 = C.BORDER
+    miscLine.Parent = miscPage
+    
+    local miscTitle = Instance.new("TextLabel")
+    miscTitle.Size = UDim2.new(1, 0, 0, 18)
+    miscTitle.Position = UDim2.new(0, 14, 0, 4)
+    miscTitle.BackgroundTransparency = 1
+    miscTitle.Text = "MISC"
+    miscTitle.TextColor3 = C.TEXT
+    miscTitle.Font = Enum.Font.GothamBold
+    miscTitle.TextSize = 11
+    miscTitle.TextXAlignment = Enum.TextXAlignment.Left
+    miscTitle.Parent = miscPage
+    
+    local autoMetalBtn = createActionButton("AUTO METAL  OFF", 0.65, 0.175, 45, C.BTN, miscPage)
+    local telecineseBtn = createActionButton("TELECINESE  OFF", 0.65, 0.175, 80, C.BTN, miscPage)
+    local playerNotifBtn = createActionButton("PLAYER NOTIF  OFF", 0.65, 0.175, 115, C.BTN, miscPage)
+    
+    -- NAV
+    local fastPunchBtn = createNavButton("Fast Punch", 8)
+    local autoFarmBtn = createNavButton("Auto Farm", 38)
+    local syncBtn = createNavButton("Sync Dupla", 68)
+    local teleportBtn = createNavButton("Teleport", 98)
+    local spawnBtn = createNavButton("Spawnpoint", 128)
+    local miscBtn = createNavButton("Misc", 158)
     
     -- ARRASTAR
     local dragging = false
@@ -642,7 +592,6 @@ local function createMainUI()
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     
-    -- NAVEGAÇÃO
     local function switchPage(pageName)
         for name, page in pairs(pages) do page.Visible = (name == pageName) end
         fastPunchBtn.BackgroundColor3 = pageName == "FastPunch" and C.BTN_HOVER or C.BTN
@@ -650,6 +599,7 @@ local function createMainUI()
         syncBtn.BackgroundColor3 = pageName == "Sync" and C.BTN_HOVER or C.BTN
         teleportBtn.BackgroundColor3 = pageName == "Teleport" and C.BTN_HOVER or C.BTN
         spawnBtn.BackgroundColor3 = pageName == "Spawn" and C.BTN_HOVER or C.BTN
+        miscBtn.BackgroundColor3 = pageName == "Misc" and C.BTN_HOVER or C.BTN
     end
     
     fastPunchBtn.MouseButton1Click:Connect(function() switchPage("FastPunch") end)
@@ -657,8 +607,8 @@ local function createMainUI()
     syncBtn.MouseButton1Click:Connect(function() switchPage("Sync") end)
     teleportBtn.MouseButton1Click:Connect(function() switchPage("Teleport") end)
     spawnBtn.MouseButton1Click:Connect(function() switchPage("Spawn") end)
+    miscBtn.MouseButton1Click:Connect(function() switchPage("Misc") end)
     
-    -- MINIMIZAR
     local minimized = false
     local originalSize = mainFrame.Size
     minimizeButton.MouseButton1Click:Connect(function()
@@ -672,14 +622,12 @@ local function createMainUI()
         end
     end)
     
-    -- FECHAR
     closeButton.MouseButton1Click:Connect(function()
         CONFIG.FAST_PUNCH_ENABLED = false
         CONFIG.LOOP_TP_ENABLED = false
         CONFIG.AUTO_FARM_ENABLED = false
         CONFIG.FRZZ_ENABLED = false
         CONFIG.AURA_ENABLED = false
-        CONFIG.ANTI_AFK_ENABLED = false
         screenGui:Destroy()
     end)
     
@@ -691,10 +639,11 @@ local function createMainUI()
         setSpawnBtn = setSpawnBtn, clearSpawnBtn = clearSpawnBtn, spStatus = spStatus,
         afToggle = afToggle, afStatus = afStatus, afTargetLabel = afTargetLabel,
         targetList = targetList, frzzToggle = frzzToggle, auraToggle = auraToggle,
-        auraCdBox = auraCdBox, antiAfkBtn = antiAfkBtn,
+        auraCdBox = auraCdBox,
         syncPage = syncPage, syncPlayerList = syncPlayerList, syncPartnerLabel = syncPartnerLabel,
-        agressorBtn = agressorBtn, vitimaBtn = vitimaBtn, syncStopBtn = syncStopBtn,
-        syncStatus = syncStatus,
+        btnA = btnA, btnB = btnB, syncStopBtn = syncStopBtn, syncStatus = syncStatus,
+        miscPage = miscPage, autoMetalBtn = autoMetalBtn, telecineseBtn = telecineseBtn, 
+        playerNotifBtn = playerNotifBtn,
     }
 end
 
@@ -768,8 +717,6 @@ local function setupTeleportSystem(ui)
                     btn.AutoButtonColor = false
                     btn.Parent = ui.playerList
                     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-                    btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.BTN_HOVER end)
-                    btn.MouseLeave:Connect(function() btn.BackgroundColor3 = C.BTN end)
                     btn.MouseButton1Click:Connect(function()
                         selectedPlayer = player
                         ui.loopTargetLabel.Text = "Target  " .. player.Name
@@ -859,7 +806,6 @@ local function setupAutoFarm(ui)
         if num and num >= 1 then CONFIG.AURA_INTERVAL = num else ui.auraCdBox.Text = tostring(CONFIG.AURA_INTERVAL) end
     end)
     
-    -- INICIAR
     ui.afToggle.MouseButton1Click:Connect(function()
         CONFIG.AUTO_FARM_ENABLED = not CONFIG.AUTO_FARM_ENABLED
         if CONFIG.AUTO_FARM_ENABLED then
@@ -867,41 +813,20 @@ local function setupAutoFarm(ui)
             ui.afToggle.Text = "STOP"
             ui.afToggle.TextColor3 = C.WHITE
             ui.afToggle.BackgroundColor3 = C.RED
-            ui.afStatus.Text = "Status  Running..."
-            
             task.spawn(function()
                 while CONFIG.AUTO_FARM_ENABLED do
                     if isPlayerAlive(selectedTarget) then
                         teleportToTarget()
-                        ui.afStatus.Text = "Status  Killing " .. selectedTarget.Name
-                        while CONFIG.AUTO_FARM_ENABLED and isPlayerAlive(selectedTarget) do
-                            doPunch()
-                            task.wait(0.05)
-                        end
+                        while CONFIG.AUTO_FARM_ENABLED and isPlayerAlive(selectedTarget) do doPunch() task.wait(0.05) end
                         if not CONFIG.AUTO_FARM_ENABLED then break end
-                        
-                        ui.afStatus.Text = "Status  Resetting..."
                         resetCharacter()
                         task.wait(0.5)
-                        
-                        ui.afStatus.Text = "Status  Waiting respawn..."
                         while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do task.wait(0.5) end
                         if not CONFIG.AUTO_FARM_ENABLED then break end
-                        
-                        for i = CONFIG.SHIELD_WAIT, 1, -1 do
-                            if not CONFIG.AUTO_FARM_ENABLED then break end
-                            ui.afStatus.Text = "Status  Shield " .. i .. "s..."
-                            task.wait(1)
-                        end
+                        for i = CONFIG.SHIELD_WAIT, 1, -1 do if not CONFIG.AUTO_FARM_ENABLED then break end task.wait(1) end
                     else
                         while CONFIG.AUTO_FARM_ENABLED and not isPlayerAlive(selectedTarget) do task.wait(1) end
-                        if CONFIG.AUTO_FARM_ENABLED then
-                            for i = CONFIG.SHIELD_WAIT, 1, -1 do
-                                if not CONFIG.AUTO_FARM_ENABLED then break end
-                                ui.afStatus.Text = "Status  Shield " .. i .. "s..."
-                                task.wait(1)
-                            end
-                        end
+                        if CONFIG.AUTO_FARM_ENABLED then for i = CONFIG.SHIELD_WAIT, 1, -1 do if not CONFIG.AUTO_FARM_ENABLED then break end task.wait(1) end end
                     end
                 end
             end)
@@ -909,11 +834,9 @@ local function setupAutoFarm(ui)
             ui.afToggle.Text = "START"
             ui.afToggle.TextColor3 = C.TEXT
             ui.afToggle.BackgroundColor3 = C.BTN
-            ui.afStatus.Text = "Status  Idle"
         end
     end)
     
-    -- FRZZ
     local freezeConnection = nil
     ui.frzzToggle.MouseButton1Click:Connect(function()
         CONFIG.FRZZ_ENABLED = not CONFIG.FRZZ_ENABLED
@@ -940,7 +863,6 @@ local function setupAutoFarm(ui)
         end
     end)
     
-    -- AURA
     ui.auraToggle.MouseButton1Click:Connect(function()
         CONFIG.AURA_ENABLED = not CONFIG.AURA_ENABLED
         if CONFIG.AURA_ENABLED then
@@ -950,7 +872,6 @@ local function setupAutoFarm(ui)
             ui.auraToggle.Text = "AURA  ON"
             ui.auraToggle.TextColor3 = C.WHITE
             ui.auraToggle.BackgroundColor3 = C.YELLOW
-            
             task.spawn(function()
                 while CONFIG.AURA_ENABLED do
                     local myChar = LocalPlayer.Character
@@ -978,38 +899,6 @@ local function setupAutoFarm(ui)
         end
     end)
     
-    -- ANTI AFK
-    ui.antiAfkBtn.MouseButton1Click:Connect(function()
-        CONFIG.ANTI_AFK_ENABLED = not CONFIG.ANTI_AFK_ENABLED
-        if CONFIG.ANTI_AFK_ENABLED then
-            ui.antiAfkBtn.Text = "ANTI AFK  ON"
-            ui.antiAfkBtn.TextColor3 = C.WHITE
-            ui.antiAfkBtn.BackgroundColor3 = C.GREEN
-            task.spawn(function()
-                while CONFIG.ANTI_AFK_ENABLED do
-                    task.wait(180)
-                    if CONFIG.ANTI_AFK_ENABLED then
-                        pcall(function()
-                            local char = LocalPlayer.Character
-                            if char and char:FindFirstChild("HumanoidRootPart") then
-                                local root = char.HumanoidRootPart
-                                local originalCF = root.CFrame
-                                root.CFrame = root.CFrame + (root.CFrame.LookVector * 3)
-                                task.wait(0.2)
-                                root.CFrame = originalCF
-                            end
-                        end)
-                    end
-                end
-            end)
-        else
-            ui.antiAfkBtn.Text = "ANTI AFK  OFF"
-            ui.antiAfkBtn.TextColor3 = C.TEXT
-            ui.antiAfkBtn.BackgroundColor3 = C.BTN
-        end
-    end)
-    
-    -- LISTA DE ALVOS
     local function updateTargetList()
         pcall(function()
             for _, child in pairs(ui.targetList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
@@ -1027,8 +916,6 @@ local function setupAutoFarm(ui)
                     btn.AutoButtonColor = false
                     btn.Parent = ui.targetList
                     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-                    btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.BTN_HOVER end)
-                    btn.MouseLeave:Connect(function() btn.BackgroundColor3 = C.BTN end)
                     btn.MouseButton1Click:Connect(function()
                         selectedTarget = player
                         ui.afTargetLabel.Text = "Target  " .. player.Name
@@ -1053,17 +940,19 @@ local function setupAutoFarm(ui)
     updateTargetList()
 end
 
--- ==================== SYNC DUPLA ====================
+-- ==================== SYNC DUPLA (A e B alternado, sem reset) ====================
 local function setupSyncDupla(ui)
     local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
     if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
     
     local SYNC_ENABLED = false
-    local SYNC_ROLE = nil
     local SYNC_PARTNER = nil
+    local MY_TURN = false
     
     local function doPunch()
-        if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then pcall(function() PUNCH_EVENT:FireServer(0, 0.1, 1) end) end
+        if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then 
+            pcall(function() PUNCH_EVENT:FireServer(0, 0.1, 1) end) 
+        end
     end
     
     local function isPlayerAlive(player)
@@ -1075,23 +964,20 @@ local function setupSyncDupla(ui)
         return humanoid.Health > 0
     end
     
-    local function teleportToPlayer(player)
+    local function goToPlayer(player)
         if not player then return end
         local targetChar = player.Character
         if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then return end
         local myChar = LocalPlayer.Character
         if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return end
-        myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2.5)
-    end
-    
-    local function resetCharacter()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then char.Humanoid.Health = 0 end
+        myChar.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
     end
     
     local function updateSyncPlayerList()
         pcall(function()
-            for _, child in pairs(ui.syncPlayerList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+            for _, child in pairs(ui.syncPlayerList:GetChildren()) do 
+                if child:IsA("TextButton") then child:Destroy() end 
+            end
             local ySize = 0
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer then
@@ -1106,12 +992,12 @@ local function setupSyncDupla(ui)
                     btn.AutoButtonColor = false
                     btn.Parent = ui.syncPlayerList
                     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-                    btn.MouseEnter:Connect(function() btn.BackgroundColor3 = C.BTN_HOVER end)
-                    btn.MouseLeave:Connect(function() btn.BackgroundColor3 = C.BTN end)
                     btn.MouseButton1Click:Connect(function()
                         SYNC_PARTNER = player
                         ui.syncPartnerLabel.Text = "Partner  " .. player.Name
-                        for _, c in pairs(ui.syncPlayerList:GetChildren()) do if c:IsA("TextButton") then c.BackgroundColor3 = C.BTN end end
+                        for _, c in pairs(ui.syncPlayerList:GetChildren()) do 
+                            if c:IsA("TextButton") then c.BackgroundColor3 = C.BTN end 
+                        end
                         btn.BackgroundColor3 = C.BTN_HOVER
                     end)
                     ySize = ySize + 28
@@ -1121,84 +1007,161 @@ local function setupSyncDupla(ui)
         end)
     end
     
-    ui.syncPage:GetPropertyChangedSignal("Visible"):Connect(function() if ui.syncPage.Visible then updateSyncPlayerList() end end)
+    ui.syncPage:GetPropertyChangedSignal("Visible"):Connect(function() 
+        if ui.syncPage.Visible then updateSyncPlayerList() end 
+    end)
     Players.PlayerAdded:Connect(function() task.wait(0.2) updateSyncPlayerList() end)
     Players.PlayerRemoving:Connect(function(p)
         task.wait(0.2) updateSyncPlayerList()
-        if SYNC_PARTNER == p then SYNC_PARTNER = nil ui.syncPartnerLabel.Text = "Partner  None"
-            if SYNC_ENABLED then SYNC_ENABLED = false SYNC_ROLE = nil ui.syncStatus.Text = "Status  Idle" end
-        end
+        if SYNC_PARTNER == p then SYNC_PARTNER = nil ui.syncPartnerLabel.Text = "Partner  None" end
     end)
     updateSyncPlayerList()
     
-    -- AGRESSOR
-    ui.agressorBtn.MouseButton1Click:Connect(function()
+    -- ============ BOTÃO A (Eu começo matando) ============
+    ui.btnA.MouseButton1Click:Connect(function()
         if not SYNC_PARTNER then ui.notificationSystem:Show("Select a partner!") return end
+        
+        SYNC_ENABLED = false task.wait(0.1)
         SYNC_ENABLED = true
-        SYNC_ROLE = "agressor"
-        ui.agressorBtn.TextColor3 = C.WHITE
-        ui.agressorBtn.BackgroundColor3 = C.RED
-        ui.syncStatus.Text = "Status  Killing " .. SYNC_PARTNER.Name
+        MY_TURN = true
+        
+        ui.btnA.TextColor3 = C.WHITE
+        ui.btnA.BackgroundColor3 = C.RED
+        ui.btnB.TextColor3 = C.TEXT
+        ui.btnB.BackgroundColor3 = C.BTN
+        
         task.spawn(function()
-            while SYNC_ENABLED and SYNC_ROLE == "agressor" do
-                if isPlayerAlive(SYNC_PARTNER) then
-                    teleportToPlayer(SYNC_PARTNER)
-                    while SYNC_ENABLED and isPlayerAlive(SYNC_PARTNER) do doPunch() task.wait(0.05) end
-                    if not SYNC_ENABLED then break end
-                    resetCharacter() task.wait(0.5)
-                    SYNC_ROLE = "vitima"
-                    ui.syncStatus.Text = "Status  Waiting death"
-                    while SYNC_ENABLED and isPlayerAlive(LocalPlayer) do task.wait(0.5) end
-                    while SYNC_ENABLED and not isPlayerAlive(LocalPlayer) do task.wait(0.5) end
-                    for i = 5, 1, -1 do if not SYNC_ENABLED then break end ui.syncStatus.Text = "Shield  " .. i .. "s" task.wait(1) end
-                    SYNC_ROLE = "agressor"
-                    ui.syncStatus.Text = "Status  Killing " .. SYNC_PARTNER.Name
+            while SYNC_ENABLED do
+                if MY_TURN then
+                    if isPlayerAlive(SYNC_PARTNER) then
+                        goToPlayer(SYNC_PARTNER)
+                        ui.syncStatus.Text = "A killing B..."
+                        while SYNC_ENABLED and MY_TURN and isPlayerAlive(SYNC_PARTNER) do
+                            doPunch() task.wait(0.05)
+                        end
+                        if not SYNC_ENABLED then break end
+                        MY_TURN = false
+                        ui.syncStatus.Text = "Waiting B..."
+                        ui.btnA.TextColor3 = C.TEXT
+                        ui.btnA.BackgroundColor3 = C.BTN
+                        ui.btnB.TextColor3 = C.WHITE
+                        ui.btnB.BackgroundColor3 = C.ACCENT
+                    end
                 else
-                    while SYNC_ENABLED and not isPlayerAlive(SYNC_PARTNER) do task.wait(1) end
-                    for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
+                    if isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
+                        ui.syncStatus.Text = "Waiting B to kill me..."
+                        while SYNC_ENABLED and not MY_TURN and isPlayerAlive(LocalPlayer) and isPlayerAlive(SYNC_PARTNER) do
+                            task.wait(0.5)
+                        end
+                    end
+                    
+                    if not SYNC_ENABLED then break end
+                    if not isPlayerAlive(LocalPlayer) then
+                        ui.syncStatus.Text = "Respawning..."
+                        while SYNC_ENABLED and not isPlayerAlive(LocalPlayer) do task.wait(0.5) end
+                        if not SYNC_ENABLED then break end
+                        for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
+                        if not SYNC_ENABLED then break end
+                        MY_TURN = true
+                        ui.syncStatus.Text = "A killing B..."
+                        ui.btnA.TextColor3 = C.WHITE
+                        ui.btnA.BackgroundColor3 = C.RED
+                        ui.btnB.TextColor3 = C.TEXT
+                        ui.btnB.BackgroundColor3 = C.BTN
+                    end
+                    
+                    if not isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
+                        while SYNC_ENABLED and not MY_TURN and not isPlayerAlive(SYNC_PARTNER) do task.wait(1) end
+                        if SYNC_ENABLED and not MY_TURN then
+                            for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
+                        end
+                    end
                 end
             end
-            ui.agressorBtn.TextColor3 = C.TEXT
-            ui.agressorBtn.BackgroundColor3 = C.BTN
+            ui.btnA.TextColor3 = C.TEXT
+            ui.btnA.BackgroundColor3 = C.BTN
+            ui.btnB.TextColor3 = C.TEXT
+            ui.btnB.BackgroundColor3 = C.BTN
         end)
     end)
     
-    -- VITIMA
-    ui.vitimaBtn.MouseButton1Click:Connect(function()
+    -- ============ BOTÃO B (O parceiro começa matando) ============
+    ui.btnB.MouseButton1Click:Connect(function()
         if not SYNC_PARTNER then ui.notificationSystem:Show("Select a partner!") return end
+        
+        SYNC_ENABLED = false task.wait(0.1)
         SYNC_ENABLED = true
-        SYNC_ROLE = "vitima"
-        ui.vitimaBtn.TextColor3 = C.WHITE
-        ui.vitimaBtn.BackgroundColor3 = C.ACCENT
-        ui.syncStatus.Text = "Status  Waiting death"
+        MY_TURN = false
+        
+        ui.btnB.TextColor3 = C.WHITE
+        ui.btnB.BackgroundColor3 = C.ACCENT
+        ui.btnA.TextColor3 = C.TEXT
+        ui.btnA.BackgroundColor3 = C.BTN
+        
         task.spawn(function()
-            while SYNC_ENABLED and SYNC_ROLE == "vitima" do
-                while SYNC_ENABLED and isPlayerAlive(LocalPlayer) do task.wait(0.5) end
-                while SYNC_ENABLED and not isPlayerAlive(LocalPlayer) do task.wait(0.5) end
-                for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
-                SYNC_ROLE = "agressor"
-                if isPlayerAlive(SYNC_PARTNER) then
-                    teleportToPlayer(SYNC_PARTNER)
-                    while SYNC_ENABLED and isPlayerAlive(SYNC_PARTNER) do doPunch() task.wait(0.05) end
+            while SYNC_ENABLED do
+                if not MY_TURN then
+                    if isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
+                        ui.syncStatus.Text = "Waiting A to kill me..."
+                        while SYNC_ENABLED and not MY_TURN and isPlayerAlive(LocalPlayer) and isPlayerAlive(SYNC_PARTNER) do
+                            task.wait(0.5)
+                        end
+                    end
+                    
+                    if not SYNC_ENABLED then break end
+                    if not isPlayerAlive(LocalPlayer) then
+                        ui.syncStatus.Text = "Respawning..."
+                        while SYNC_ENABLED and not isPlayerAlive(LocalPlayer) do task.wait(0.5) end
+                        if not SYNC_ENABLED then break end
+                        for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
+                        if not SYNC_ENABLED then break end
+                        MY_TURN = true
+                        ui.syncStatus.Text = "B killing A..."
+                        ui.btnB.TextColor3 = C.WHITE
+                        ui.btnB.BackgroundColor3 = C.RED
+                        ui.btnA.TextColor3 = C.TEXT
+                        ui.btnA.BackgroundColor3 = C.BTN
+                    end
+                    
+                    if not isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
+                        while SYNC_ENABLED and not MY_TURN and not isPlayerAlive(SYNC_PARTNER) do task.wait(1) end
+                        if SYNC_ENABLED and not MY_TURN then
+                            for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
+                        end
+                    end
+                else
+                    if isPlayerAlive(SYNC_PARTNER) then
+                        goToPlayer(SYNC_PARTNER)
+                        ui.syncStatus.Text = "B killing A..."
+                        while SYNC_ENABLED and MY_TURN and isPlayerAlive(SYNC_PARTNER) do
+                            doPunch() task.wait(0.05)
+                        end
+                        if not SYNC_ENABLED then break end
+                        MY_TURN = false
+                        ui.syncStatus.Text = "Waiting A..."
+                        ui.btnB.TextColor3 = C.TEXT
+                        ui.btnB.BackgroundColor3 = C.BTN
+                        ui.btnA.TextColor3 = C.WHITE
+                        ui.btnA.BackgroundColor3 = C.ACCENT
+                    end
                 end
-                if not SYNC_ENABLED then break end
-                resetCharacter() task.wait(0.5)
-                SYNC_ROLE = "vitima"
-                ui.syncStatus.Text = "Status  Waiting death"
             end
-            ui.vitimaBtn.TextColor3 = C.TEXT
-            ui.vitimaBtn.BackgroundColor3 = C.BTN
+            ui.btnA.TextColor3 = C.TEXT
+            ui.btnA.BackgroundColor3 = C.BTN
+            ui.btnB.TextColor3 = C.TEXT
+            ui.btnB.BackgroundColor3 = C.BTN
         end)
     end)
     
+    -- STOP
     ui.syncStopBtn.MouseButton1Click:Connect(function()
         SYNC_ENABLED = false
-        SYNC_ROLE = nil
+        MY_TURN = false
         ui.syncStatus.Text = "Status  Idle"
-        ui.agressorBtn.TextColor3 = C.TEXT
-        ui.agressorBtn.BackgroundColor3 = C.BTN
-        ui.vitimaBtn.TextColor3 = C.TEXT
-        ui.vitimaBtn.BackgroundColor3 = C.BTN
+        ui.btnA.TextColor3 = C.TEXT
+        ui.btnA.BackgroundColor3 = C.BTN
+        ui.btnB.TextColor3 = C.TEXT
+        ui.btnB.BackgroundColor3 = C.BTN
     end)
 end
 
@@ -1231,6 +1194,38 @@ local function setupSpawnpoint(ui)
     end)
 end
 
+-- ==================== MISC ====================
+local function setupMisc(ui)
+    -- PLAYER NOTIFY
+    ui.playerNotifBtn.MouseButton1Click:Connect(function()
+        CONFIG.PLAYER_NOTIF_ON = not CONFIG.PLAYER_NOTIF_ON
+        if CONFIG.PLAYER_NOTIF_ON then
+            ui.playerNotifBtn.Text = "PLAYER NOTIF  ON"
+            ui.playerNotifBtn.TextColor3 = C.WHITE
+            ui.playerNotifBtn.BackgroundColor3 = C.GREEN
+        else
+            ui.playerNotifBtn.Text = "PLAYER NOTIF  OFF"
+            ui.playerNotifBtn.TextColor3 = C.TEXT
+            ui.playerNotifBtn.BackgroundColor3 = C.BTN
+        end
+    end)
+end
+
+-- Player Notify global
+Players.PlayerAdded:Connect(function(player)
+    if CONFIG.PLAYER_NOTIF_ON then
+        task.wait(0.5)
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Player Joined",
+                Text = player.Name .. " (@" .. player.DisplayName .. ")",
+                Duration = 5,
+                Button1 = "OK"
+            })
+        end)
+    end
+end)
+
 -- ==================== INICIALIZAÇÃO ====================
 local function initialize()
     pcall(function()
@@ -1240,6 +1235,7 @@ local function initialize()
         setupTeleportSystem(ui)
         setupSpawnpoint(ui)
         setupSyncDupla(ui)
+        setupMisc(ui)
         ui.notificationSystem:Show("Age of Heroes loaded!")
     end)
 end
