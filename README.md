@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO) - VANTABLACK EDITION
-    Versão: 3.3.3 ESTÁVEL
-    Auto Metal com seletor de slot (Q/E/F/R) - CORRIGIDO
+    Versão: 3.3.4 ESTÁVEL
+    Fast Punch CORRIGIDO + Auto Metal + Sync Dupla + Player Notify
 ]]
 
 -- Serviços
@@ -75,11 +75,23 @@ end
 
 -- ==================== FUNÇÕES AUXILIARES ====================
 local function getEvent(eventName)
+    -- Primeiro tenta em ClientStorage.Events
     local cs = ReplicatedStorage:FindFirstChild("ClientStorage")
-    if not cs then return nil end
-    local events = cs:FindFirstChild("Events")
-    if not events then return nil end
-    return events:FindFirstChild(eventName)
+    if cs then
+        local events = cs:FindFirstChild("Events")
+        if events then
+            local ev = events:FindFirstChild(eventName)
+            if ev then return ev end
+        end
+    end
+    -- Depois tenta em ReplicatedStorage.Events (caminho antigo)
+    local events = ReplicatedStorage:FindFirstChild("Events")
+    if events then
+        local ev = events:FindFirstChild(eventName)
+        if ev then return ev end
+    end
+    -- Por último, tenta direto no ReplicatedStorage
+    return ReplicatedStorage:FindFirstChild(eventName)
 end
 
 local function getMetalKey()
@@ -92,7 +104,6 @@ local function getMetalKey()
     return keys[CONFIG.METAL_SLOT] or Enum.KeyCode.Q
 end
 
--- ==================== ATIVAÇÃO DO METAL (APENAS A TECLA SELECIONADA) ====================
 local function activateMetal()
     local key = getMetalKey()
     VirtualInputManager:SendKeyEvent(true, key, false, nil)
@@ -603,7 +614,7 @@ local function createMainUI()
     local slotRBtn = createActionButton("R", 0.12, 0.80, 30, CONFIG.METAL_SLOT == "R" and C.ACCENT or C.BTN, miscPage)
 
     local autoMetalBtn = createActionButton("AUTO METAL  OFF", 0.65, 0.175, 68, C.BTN, miscPage)
-    local telecineseBtn = createActionButton("TELECINESE  OFF", 0.65, 0.175, 105, C.BTN, miscPage)
+    local telecineseBtn = createActionButton("TELECINESE  ON", 0.65, 0.175, 105, C.BTN, miscPage)
     local playerNotifBtn = createActionButton("PLAYER NOTIF  OFF", 0.65, 0.175, 142, C.BTN, miscPage)
     
     -- NAV
@@ -1269,11 +1280,11 @@ local function setupMisc(ui)
     ui.telecineseBtn.MouseButton1Click:Connect(function()
         CONFIG.TELECINESE_ON = not CONFIG.TELECINESE_ON
         if CONFIG.TELECINESE_ON then
-            ui.telecineseBtn.Text = "TELECINESE  ON"
-            ui.telecineseBtn.TextColor3 = C.WHITE
-            ui.telecineseBtn.BackgroundColor3 = C.GREEN
-        else
             ui.telecineseBtn.Text = "TELECINESE  OFF"
+            ui.telecineseBtn.TextColor3 = C.WHITE
+            ui.telecineseBtn.BackgroundColor3 = C.RED
+        else
+            ui.telecineseBtn.Text = "TELECINESE  ON"
             ui.telecineseBtn.TextColor3 = C.TEXT
             ui.telecineseBtn.BackgroundColor3 = C.BTN
         end
