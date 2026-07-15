@@ -1,7 +1,7 @@
 --[[
     Age of Heroes - Premium (COMPLETO) - VANTABLACK EDITION
-    Versão: 3.2.8 ESTÁVEL
-    Sync Dupla A/B alternado + Player Notify funcional
+    Versão: 3.3.3 ESTÁVEL
+    Auto Metal com seletor de slot (Q/E/F/R) - CORRIGIDO
 ]]
 
 -- Serviços
@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -31,6 +32,7 @@ local CONFIG = {
     AURA_ENABLED = false,
     AURA_INTERVAL = 7,
     AUTO_METAL_ON = false,
+    METAL_SLOT = "Q",
     TELECINESE_ON = false,
     PLAYER_NOTIF_ON = false,
 }
@@ -69,6 +71,33 @@ function NotificationSystem:Show(message, duration)
             Button1 = "OK"
         })
     end)
+end
+
+-- ==================== FUNÇÕES AUXILIARES ====================
+local function getEvent(eventName)
+    local cs = ReplicatedStorage:FindFirstChild("ClientStorage")
+    if not cs then return nil end
+    local events = cs:FindFirstChild("Events")
+    if not events then return nil end
+    return events:FindFirstChild(eventName)
+end
+
+local function getMetalKey()
+    local keys = {
+        ["Q"] = Enum.KeyCode.Q,
+        ["E"] = Enum.KeyCode.E,
+        ["F"] = Enum.KeyCode.F,
+        ["R"] = Enum.KeyCode.R,
+    }
+    return keys[CONFIG.METAL_SLOT] or Enum.KeyCode.Q
+end
+
+-- ==================== ATIVAÇÃO DO METAL (APENAS A TECLA SELECIONADA) ====================
+local function activateMetal()
+    local key = getMetalKey()
+    VirtualInputManager:SendKeyEvent(true, key, false, nil)
+    task.wait(0.1)
+    VirtualInputManager:SendKeyEvent(false, key, false, nil)
 end
 
 local function createMainUI()
@@ -556,9 +585,26 @@ local function createMainUI()
     miscTitle.TextXAlignment = Enum.TextXAlignment.Left
     miscTitle.Parent = miscPage
     
-    local autoMetalBtn = createActionButton("AUTO METAL  OFF", 0.65, 0.175, 45, C.BTN, miscPage)
-    local telecineseBtn = createActionButton("TELECINESE  OFF", 0.65, 0.175, 80, C.BTN, miscPage)
-    local playerNotifBtn = createActionButton("PLAYER NOTIF  OFF", 0.65, 0.175, 115, C.BTN, miscPage)
+    -- Seletor de slot do Metal
+    local slotLabel = Instance.new("TextLabel")
+    slotLabel.Size = UDim2.new(0.4, 0, 0, 14)
+    slotLabel.Position = UDim2.new(0.02, 0, 0, 32)
+    slotLabel.BackgroundTransparency = 1
+    slotLabel.Text = "Metal Slot:"
+    slotLabel.TextColor3 = C.TEXT2
+    slotLabel.Font = Enum.Font.GothamMedium
+    slotLabel.TextSize = 9
+    slotLabel.TextXAlignment = Enum.TextXAlignment.Left
+    slotLabel.Parent = miscPage
+
+    local slotQBtn = createActionButton("Q", 0.12, 0.38, 30, CONFIG.METAL_SLOT == "Q" and C.ACCENT or C.BTN, miscPage)
+    local slotEBtn = createActionButton("E", 0.12, 0.52, 30, CONFIG.METAL_SLOT == "E" and C.ACCENT or C.BTN, miscPage)
+    local slotFBtn = createActionButton("F", 0.12, 0.66, 30, CONFIG.METAL_SLOT == "F" and C.ACCENT or C.BTN, miscPage)
+    local slotRBtn = createActionButton("R", 0.12, 0.80, 30, CONFIG.METAL_SLOT == "R" and C.ACCENT or C.BTN, miscPage)
+
+    local autoMetalBtn = createActionButton("AUTO METAL  OFF", 0.65, 0.175, 68, C.BTN, miscPage)
+    local telecineseBtn = createActionButton("TELECINESE  OFF", 0.65, 0.175, 105, C.BTN, miscPage)
+    local playerNotifBtn = createActionButton("PLAYER NOTIF  OFF", 0.65, 0.175, 142, C.BTN, miscPage)
     
     -- NAV
     local fastPunchBtn = createNavButton("Fast Punch", 8)
@@ -628,6 +674,7 @@ local function createMainUI()
         CONFIG.AUTO_FARM_ENABLED = false
         CONFIG.FRZZ_ENABLED = false
         CONFIG.AURA_ENABLED = false
+        CONFIG.AUTO_METAL_ON = false
         screenGui:Destroy()
     end)
     
@@ -644,14 +691,14 @@ local function createMainUI()
         btnA = btnA, btnB = btnB, syncStopBtn = syncStopBtn, syncStatus = syncStatus,
         miscPage = miscPage, autoMetalBtn = autoMetalBtn, telecineseBtn = telecineseBtn, 
         playerNotifBtn = playerNotifBtn,
+        slotQBtn = slotQBtn, slotEBtn = slotEBtn, slotFBtn = slotFBtn, slotRBtn = slotRBtn,
     }
 end
 
 -- ==================== FAST PUNCH ====================
 local function setupFastPunch(ui)
     local isRunning = false
-    local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
-    if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
+    local PUNCH_EVENT = getEvent("Punch")
     
     local function doPunch()
         if PUNCH_EVENT and PUNCH_EVENT:IsA("RemoteEvent") then
@@ -768,8 +815,7 @@ end
 
 -- ==================== AUTO FARM ====================
 local function setupAutoFarm(ui)
-    local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
-    if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
+    local PUNCH_EVENT = getEvent("Punch")
     local selectedTarget = nil
     
     local function doPunch()
@@ -940,11 +986,9 @@ local function setupAutoFarm(ui)
     updateTargetList()
 end
 
--- ==================== SYNC DUPLA (A e B alternado, sem reset) ====================
+-- ==================== SYNC DUPLA ====================
 local function setupSyncDupla(ui)
-    local PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Events") and ReplicatedStorage.Events:FindFirstChild("Punch")
-    if not PUNCH_EVENT then PUNCH_EVENT = ReplicatedStorage:FindFirstChild("Punch") end
-    
+    local PUNCH_EVENT = getEvent("Punch")
     local SYNC_ENABLED = false
     local SYNC_PARTNER = nil
     local MY_TURN = false
@@ -1017,14 +1061,12 @@ local function setupSyncDupla(ui)
     end)
     updateSyncPlayerList()
     
-    -- ============ BOTÃO A (Eu começo matando) ============
+    -- BOTÃO A
     ui.btnA.MouseButton1Click:Connect(function()
         if not SYNC_PARTNER then ui.notificationSystem:Show("Select a partner!") return end
-        
         SYNC_ENABLED = false task.wait(0.1)
         SYNC_ENABLED = true
         MY_TURN = true
-        
         ui.btnA.TextColor3 = C.WHITE
         ui.btnA.BackgroundColor3 = C.RED
         ui.btnB.TextColor3 = C.TEXT
@@ -1049,15 +1091,12 @@ local function setupSyncDupla(ui)
                     end
                 else
                     if isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
-                        ui.syncStatus.Text = "Waiting B to kill me..."
                         while SYNC_ENABLED and not MY_TURN and isPlayerAlive(LocalPlayer) and isPlayerAlive(SYNC_PARTNER) do
                             task.wait(0.5)
                         end
                     end
-                    
                     if not SYNC_ENABLED then break end
                     if not isPlayerAlive(LocalPlayer) then
-                        ui.syncStatus.Text = "Respawning..."
                         while SYNC_ENABLED and not isPlayerAlive(LocalPlayer) do task.wait(0.5) end
                         if not SYNC_ENABLED then break end
                         for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
@@ -1069,30 +1108,19 @@ local function setupSyncDupla(ui)
                         ui.btnB.TextColor3 = C.TEXT
                         ui.btnB.BackgroundColor3 = C.BTN
                     end
-                    
-                    if not isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
-                        while SYNC_ENABLED and not MY_TURN and not isPlayerAlive(SYNC_PARTNER) do task.wait(1) end
-                        if SYNC_ENABLED and not MY_TURN then
-                            for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
-                        end
-                    end
                 end
             end
-            ui.btnA.TextColor3 = C.TEXT
-            ui.btnA.BackgroundColor3 = C.BTN
-            ui.btnB.TextColor3 = C.TEXT
-            ui.btnB.BackgroundColor3 = C.BTN
+            ui.btnA.TextColor3 = C.TEXT; ui.btnA.BackgroundColor3 = C.BTN
+            ui.btnB.TextColor3 = C.TEXT; ui.btnB.BackgroundColor3 = C.BTN
         end)
     end)
     
-    -- ============ BOTÃO B (O parceiro começa matando) ============
+    -- BOTÃO B
     ui.btnB.MouseButton1Click:Connect(function()
         if not SYNC_PARTNER then ui.notificationSystem:Show("Select a partner!") return end
-        
         SYNC_ENABLED = false task.wait(0.1)
         SYNC_ENABLED = true
         MY_TURN = false
-        
         ui.btnB.TextColor3 = C.WHITE
         ui.btnB.BackgroundColor3 = C.ACCENT
         ui.btnA.TextColor3 = C.TEXT
@@ -1102,15 +1130,12 @@ local function setupSyncDupla(ui)
             while SYNC_ENABLED do
                 if not MY_TURN then
                     if isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
-                        ui.syncStatus.Text = "Waiting A to kill me..."
                         while SYNC_ENABLED and not MY_TURN and isPlayerAlive(LocalPlayer) and isPlayerAlive(SYNC_PARTNER) do
                             task.wait(0.5)
                         end
                     end
-                    
                     if not SYNC_ENABLED then break end
                     if not isPlayerAlive(LocalPlayer) then
-                        ui.syncStatus.Text = "Respawning..."
                         while SYNC_ENABLED and not isPlayerAlive(LocalPlayer) do task.wait(0.5) end
                         if not SYNC_ENABLED then break end
                         for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
@@ -1121,13 +1146,6 @@ local function setupSyncDupla(ui)
                         ui.btnB.BackgroundColor3 = C.RED
                         ui.btnA.TextColor3 = C.TEXT
                         ui.btnA.BackgroundColor3 = C.BTN
-                    end
-                    
-                    if not isPlayerAlive(SYNC_PARTNER) and isPlayerAlive(LocalPlayer) then
-                        while SYNC_ENABLED and not MY_TURN and not isPlayerAlive(SYNC_PARTNER) do task.wait(1) end
-                        if SYNC_ENABLED and not MY_TURN then
-                            for i = 5, 1, -1 do if not SYNC_ENABLED then break end task.wait(1) end
-                        end
                     end
                 else
                     if isPlayerAlive(SYNC_PARTNER) then
@@ -1146,22 +1164,17 @@ local function setupSyncDupla(ui)
                     end
                 end
             end
-            ui.btnA.TextColor3 = C.TEXT
-            ui.btnA.BackgroundColor3 = C.BTN
-            ui.btnB.TextColor3 = C.TEXT
-            ui.btnB.BackgroundColor3 = C.BTN
+            ui.btnA.TextColor3 = C.TEXT; ui.btnA.BackgroundColor3 = C.BTN
+            ui.btnB.TextColor3 = C.TEXT; ui.btnB.BackgroundColor3 = C.BTN
         end)
     end)
     
-    -- STOP
     ui.syncStopBtn.MouseButton1Click:Connect(function()
         SYNC_ENABLED = false
         MY_TURN = false
         ui.syncStatus.Text = "Status  Idle"
-        ui.btnA.TextColor3 = C.TEXT
-        ui.btnA.BackgroundColor3 = C.BTN
-        ui.btnB.TextColor3 = C.TEXT
-        ui.btnB.BackgroundColor3 = C.BTN
+        ui.btnA.TextColor3 = C.TEXT; ui.btnA.BackgroundColor3 = C.BTN
+        ui.btnB.TextColor3 = C.TEXT; ui.btnB.BackgroundColor3 = C.BTN
     end)
 end
 
@@ -1196,6 +1209,76 @@ end
 
 -- ==================== MISC ====================
 local function setupMisc(ui)
+    -- AUTO METAL
+    local autoMetalConnection = nil
+    
+    autoMetalConnection = LocalPlayer.CharacterAdded:Connect(function(char)
+        if CONFIG.AUTO_METAL_ON then
+            task.wait(0.5)
+            activateMetal()
+        end
+    end)
+    
+    ui.autoMetalBtn.MouseButton1Click:Connect(function()
+        CONFIG.AUTO_METAL_ON = not CONFIG.AUTO_METAL_ON
+        if CONFIG.AUTO_METAL_ON then
+            ui.autoMetalBtn.Text = "AUTO METAL  ON"
+            ui.autoMetalBtn.TextColor3 = C.WHITE
+            ui.autoMetalBtn.BackgroundColor3 = C.GREEN
+            ui.notificationSystem:Show("Auto Metal ON")
+            activateMetal()
+        else
+            ui.autoMetalBtn.Text = "AUTO METAL  OFF"
+            ui.autoMetalBtn.TextColor3 = C.TEXT
+            ui.autoMetalBtn.BackgroundColor3 = C.BTN
+            ui.notificationSystem:Show("Auto Metal OFF")
+        end
+    end)
+    
+    -- SLOTS DO METAL
+    ui.slotQBtn.MouseButton1Click:Connect(function()
+        CONFIG.METAL_SLOT = "Q"
+        ui.slotQBtn.BackgroundColor3 = C.ACCENT
+        ui.slotEBtn.BackgroundColor3 = C.BTN
+        ui.slotFBtn.BackgroundColor3 = C.BTN
+        ui.slotRBtn.BackgroundColor3 = C.BTN
+    end)
+    ui.slotEBtn.MouseButton1Click:Connect(function()
+        CONFIG.METAL_SLOT = "E"
+        ui.slotQBtn.BackgroundColor3 = C.BTN
+        ui.slotEBtn.BackgroundColor3 = C.ACCENT
+        ui.slotFBtn.BackgroundColor3 = C.BTN
+        ui.slotRBtn.BackgroundColor3 = C.BTN
+    end)
+    ui.slotFBtn.MouseButton1Click:Connect(function()
+        CONFIG.METAL_SLOT = "F"
+        ui.slotQBtn.BackgroundColor3 = C.BTN
+        ui.slotEBtn.BackgroundColor3 = C.BTN
+        ui.slotFBtn.BackgroundColor3 = C.ACCENT
+        ui.slotRBtn.BackgroundColor3 = C.BTN
+    end)
+    ui.slotRBtn.MouseButton1Click:Connect(function()
+        CONFIG.METAL_SLOT = "R"
+        ui.slotQBtn.BackgroundColor3 = C.BTN
+        ui.slotEBtn.BackgroundColor3 = C.BTN
+        ui.slotFBtn.BackgroundColor3 = C.BTN
+        ui.slotRBtn.BackgroundColor3 = C.ACCENT
+    end)
+    
+    -- TELECINESE (placeholder)
+    ui.telecineseBtn.MouseButton1Click:Connect(function()
+        CONFIG.TELECINESE_ON = not CONFIG.TELECINESE_ON
+        if CONFIG.TELECINESE_ON then
+            ui.telecineseBtn.Text = "TELECINESE  ON"
+            ui.telecineseBtn.TextColor3 = C.WHITE
+            ui.telecineseBtn.BackgroundColor3 = C.GREEN
+        else
+            ui.telecineseBtn.Text = "TELECINESE  OFF"
+            ui.telecineseBtn.TextColor3 = C.TEXT
+            ui.telecineseBtn.BackgroundColor3 = C.BTN
+        end
+    end)
+    
     -- PLAYER NOTIFY
     ui.playerNotifBtn.MouseButton1Click:Connect(function()
         CONFIG.PLAYER_NOTIF_ON = not CONFIG.PLAYER_NOTIF_ON
